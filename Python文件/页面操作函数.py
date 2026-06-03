@@ -49,7 +49,8 @@ def 战斗副本详情页():
     clink = 坐标随机(zhandoukaishi_zuobiao, left=200, right=200, up=40, down=40)
     adb_click(clink)
 def 章节首页():
-    章节标签定位()
+    章节标签位置初始化()
+    章节位置初始化()
     未通关章节定位()
     坐标=(1710,707)
     坐标=坐标随机(坐标,left=500,right=500,up=300,down=300)
@@ -76,4 +77,4 @@ def 播放剧情():
 
 if __name__ == '__main__':
     # while True:
-    副本首页()
+    章节首页()

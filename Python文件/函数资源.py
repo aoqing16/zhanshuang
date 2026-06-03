@@ -584,7 +584,7 @@ def 战斗标识检测(image, roi=(2065, 1219, 68, 81)):
     return 1 if pixel_count > 500 else None
 
 
-def 章节标签定位():
+def 章节标签位置初始化():
     while True:
         首个章节标签 = 图像是否存在('ziyuanwenjian/biaoshi/img_15.png')
         if 首个章节标签:
@@ -592,26 +592,46 @@ def 章节标签定位():
         else:
             d.swipe(150, 345, 160, 1215, steps=10)
             time.sleep(1.5)
-    while True:
-        目标章节标签 = 图像是否存在('ziyuanwenjian/biaoshi/img_14.png')
-        if 目标章节标签:
-            print('成功定位到目标章节标签')
-            break
-        else:
-            zuobiao = (138, 963)
-            zuobiao = 坐标随机(zuobiao, left=120, right=120, up=15, down=15)
-            adb_click(zuobiao)
-            time.sleep(0.7)
+def 章节位置初始化():
+    for i in range(6):
+        print(f"正在进行第 {i + 1} 次向右滑动...")
+        d.swipe_ext("right", scale=0.2)
+        time.sleep(0.8)
 
 
 def 未通关章节定位():
+    '''
+    遍历判断，直到定位到没有通关标识的章节
+    '''
+    滑动次数 = 0  # 初始化计数器
+
     while True:
         通关标志 = 图像是否存在('ziyuanwenjian/biaoshi/img_16.png')
+
         if 通关标志:
+            # 执行左滑
             d.swipe_ext("left", scale=0.2)
+            滑动次数 += 1  # 计数加 1
+            print(f"检测到通关标志，已累计向左滑动 {滑动次数} 次")
             time.sleep(1)
 
+            # 当滑动满 7 次时触发
+            if 滑动次数 == 7:
+                print("已满 7 次，执行点击动作...")
+
+                # 执行点击（请替换为你的实际目标坐标）
+                下一章ui = (138, 963)
+                下一章ui = 坐标随机(下一章ui, left=120, right=120, up=15, down=15)
+                adb_click(下一章ui)
+                time.sleep(0.6)
+
+                # 【核心修改】：重置计数器，不退出，让 while 循环继续重复执行
+                滑动次数 = 0
+                print("点击完成，重置计数，继续当前函数循环...")
+
         else:
+            # 如果没检测到通关标志，说明找到了未通关章节，退出循环
+            print("未检测到通关标志，已定位到未通关章节。")
             break
 
 
@@ -820,5 +840,4 @@ def 路径向导(relative_path):
 
 
 if __name__ == '__main__':
-    while True:
-        print(yolo页面检测主函数())
+    未通关章节定位()
