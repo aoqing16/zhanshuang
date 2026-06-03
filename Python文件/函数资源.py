@@ -10,7 +10,7 @@ import sys
 import 共享变量
 print('模型加载中')
 model = YOLO(r'C:\Users\ZhuanZ1\runs\detect\train-8\weights\best.pt')
-model_1 = YOLO(r"C:\Users\ZhuanZ1\runs\classify\train\weights\best.pt")
+model_1 = YOLO(r"C:\Users\ZhuanZ1\runs\classify\train-4\weights\best.pt")
 # from Python文件.中央调度器 import 页面识别
 
 # 1. 连接设备
@@ -241,17 +241,35 @@ def yolo页面识别():
 
     # 3. 使用模型分类
     # verbose=False 去掉控制台冗余输出
-    results = model(img, conf=0.8, verbose=False)
+    results = model_1(img, conf=0.8, verbose=False)
 
     # 分类结果解析
     probs = results[0].probs
     top1_id = probs.top1
     top1_conf = probs.top1conf.item()
     label = results[0].names[top1_id]
-
+    print(f'yolo检测函数返回结果{label}置信度：{top1_conf: 2f}')
     # 打印结果和耗时
-    print(f"当前页面: {label} | 置信度: {top1_conf:.2f} | 耗时: {time.time() - start:.4f}s")
+    # print(f"当前页面: {label} | 置信度: {top1_conf:.2f} | 耗时: {time.time() - start:.4f}s")
     return label
+过滤后识别结果='0'
+count=0
+def yolo过滤器(label):
+    global count,过滤后识别结果
+    if label==过滤后识别结果:
+        count += 1
+    else:
+        过滤后识别结果=label
+        count=1
+    if count>=2:
+        return 过滤后识别结果
+    else:
+        return 0
+
+def yolo页面检测主函数():
+    ll=yolo页面识别()
+    过滤结果=yolo过滤器(ll)
+    return 过滤结果
 
 def 页面识别灰度模式(threshold=0.8):
     """
@@ -729,7 +747,7 @@ def 路径向导(relative_path):
 
 if __name__ == '__main__':
     while True:
-        start_time=time.time()
-        m=页面识别灰度模式()
-        print(f'识别耗时{time.time() - start_time}')
-        print(m)
+        time.sleep(1)
+        ll=yolo页面识别()
+        过滤结果=yolo过滤器(ll)
+        print(过滤结果)
