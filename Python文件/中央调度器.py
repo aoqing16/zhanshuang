@@ -3,21 +3,21 @@ from 页面操作函数 import *
 import 共享变量
 # 定义一个锁，防止主线程读取时，后台线程正在写入，造成数据错乱
 data_lock = threading.Lock()
-def 页面识别灰度模式子线程():
+def yolo页面检测子线程():
 
     while True:
         # 这里模拟你的识别过程
         # 注意：这里如果太快会占满CPU，建议加个微小的 sleep
         # start_time=time.time()
 
-        result = yolo页面识别()
+        result = yolo页面检测主函数()
         # print(f'子线程获取的数据: {result}')
         # 锁定，更新数据
         # print(f'子线程更新数据耗时{time.time() - start_time}')
         with data_lock:
             共享变量.latest_result = result
 
-        time.sleep(0.05)  # 适当休息，避免识别线程跑得太快把CPU吃满
+        time.sleep(0.1)  # 适当休息，避免识别线程跑得太快把CPU吃满
 def 页面匹配():
     战斗标识符=战斗场景检测()
     if 战斗标识符:
@@ -57,7 +57,7 @@ def 页面匹配():
 ##################################################
 
 if __name__ == '__main__':
-    t = threading.Thread(target=页面识别灰度模式子线程, daemon=True)
+    t = threading.Thread(target=yolo页面检测子线程, daemon=True)
     t.start()
     time.sleep(3)
     while True:

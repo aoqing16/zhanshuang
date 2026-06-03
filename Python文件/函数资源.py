@@ -10,7 +10,7 @@ import sys
 import 共享变量
 print('模型加载中')
 model = YOLO(r'C:\Users\ZhuanZ1\runs\detect\train-8\weights\best.pt')
-model_1 = YOLO(r"C:\Users\ZhuanZ1\runs\classify\train-4\weights\best.pt")
+model_1 = YOLO(r"C:\Users\ZhuanZ1\runs\classify\train-5\weights\best.pt")
 # from Python文件.中央调度器 import 页面识别
 
 # 1. 连接设备
@@ -328,7 +328,7 @@ def 页面识别(threshold=0.8):
             detected_names.append(name)
 
     return detected_names
-def ui变化检测(标识符,timeout=1,interval=0.1):
+def ui变化检测(标识符,timeout=2,interval=0.1):
     start_time = time.time()
     while time.time() - start_time < timeout:
         if 共享变量.latest_result!=标识符:
@@ -474,6 +474,80 @@ def 获取可用关卡坐标(img, boxes, threshold=0.85):
     return 0
 
 
+def 获取最右侧未通关关卡(img, boxes, threshold=0.85):
+    """
+    最严格进度筛选逻辑：
+    1. 计算屏幕上所有区域的 x2 最大值 (全局最右边界)。
+    2. 遍历所有区域，通过模板匹配排除已通关区域，找出所有“未通关”候选者。
+    3. 如果存在候选者，找出候选者中 x2 最大的那个 (候选最右边界)。
+    4. 【最终校验】：只有当 (候选最右边界 == 全局最右边界) 时，才返回该候选中心。
+    """
+    if not boxes:
+        print("未检测到任何关卡区域")
+        return 0
+    print(f'当前检测到 {len(boxes)} 个关卡')
+
+    # ———————— 第一步：获取全局最右边界 (x2) ————————
+    # 我们认为，这个坐标代表了当前屏幕上最新的关卡所在位置
+    all_x2s = [int(box[2]) for box in boxes]
+    max_x2_overall = max(all_x2s)
+    print(f"当前屏幕最右侧图标边界 x2 = {max_x2_overall}")
+
+    # ———————— 第二步：排除已通关区域，找出候选者 ————————
+    uncompleted_candidates = []
+
+    for box in boxes:
+        x1, y1, x2, y2 = map(int, box)
+        # 获取 ROI 并检查有效性
+        roi = img[max(0, y1):min(img.shape[0], y2), max(0, x1):min(img.shape[1], x2)]
+        if roi.size == 0: continue
+
+        # 模板匹配状态排查 (逻辑同你原有的，此处不赘述细节)
+        is_occupied = False
+        roi_hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+        roi_gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+
+        for state, data in LOADED_TEMPLATES.items():
+            mask = cv2.inRange(roi_hsv, data['hsv_range'][0], data['hsv_range'][1])
+            if cv2.countNonZero(mask) > 100:
+                masked_roi = cv2.bitwise_and(roi_gray, roi_gray, mask=mask)
+                res = cv2.matchTemplate(masked_roi, data['gray'], cv2.TM_CCOEFF_NORMED)
+                _, max_val, _, _ = cv2.minMaxLoc(res)
+                if max_val >= threshold:
+                    is_occupied = True
+                    break
+
+        # 将未被匹配到的（未通关）存入候选
+        if not is_occupied:
+            uncompleted_candidates.append({
+                'center': ((x1 + x2) // 2, (y1 + y2) // 2),
+                'x2': x2
+            })
+
+    # ———————— 第三步 & 第四步：找出候选中的最右，并与全局做比较 ————————
+
+    if not uncompleted_candidates:
+        print("屏幕上所有关卡均已通关 (或未匹配到)，无操作。")
+        return 0
+
+    # 找出剩余未通关关卡中，最靠右的那一个
+    best_candidate = max(uncompleted_candidates, key=lambda c: c['x2'])
+    candidate_max_x2 = best_candidate['x2']
+
+    print(f"剩余未通关关卡中最靠右的边界 x2 = {candidate_max_x2}")
+
+    # 【最终核心逻辑校验】
+    # 只有当：最右边的未通关关卡的 x2，等于全局最右图标的 x2
+    # 这意味着：最新的关卡还没打，可以打。
+    if candidate_max_x2 == max_x2_overall:
+        print(f"校验通过！最新的关卡 (x2={candidate_max_x2}) 尚未通关，准备点击。")
+        return best_candidate['center']
+    else:
+        # 如果 candidate_max_x2 < max_x2_overall，
+        # 说明物理位置最靠右的那个已经是"已通关"状态了。
+        print(f"校验失败：最靠右的图标已被通关 (全局x2={max_x2_overall})。")
+        print(f"左侧存在未通关关卡 (x2={candidate_max_x2})，但按逻辑跳过，避免点旧关卡。")
+        return 0
 hsv_min=np.array([0,0,246])
 hsv_max=np.array([74, 3, 255])
 def 战斗标识检测(image, roi=(2065, 1219, 68, 81)):
@@ -747,7 +821,4 @@ def 路径向导(relative_path):
 
 if __name__ == '__main__':
     while True:
-        time.sleep(1)
-        ll=yolo页面识别()
-        过滤结果=yolo过滤器(ll)
-        print(过滤结果)
+        print(yolo页面检测主函数())

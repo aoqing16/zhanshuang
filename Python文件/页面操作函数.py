@@ -6,7 +6,7 @@ def 副本首页():
     while True:
         img = 截图()
         n = yolo检测(img)
-        m = 获取可用关卡坐标(img,n)
+        m = 获取最右侧未通关关卡(img,n)
         print(f'未通过关卡中心坐标{m}')
         if count<=2:
             if m == 0:
