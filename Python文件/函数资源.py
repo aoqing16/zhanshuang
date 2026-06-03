@@ -10,6 +10,7 @@ import sys
 import 共享变量
 print('模型加载中')
 model = YOLO(r'C:\Users\ZhuanZ1\runs\detect\train-8\weights\best.pt')
+model_1 = YOLO(r"C:\Users\ZhuanZ1\runs\classify\train\weights\best.pt")
 # from Python文件.中央调度器 import 页面识别
 
 # 1. 连接设备
@@ -233,7 +234,24 @@ TEMPLATE_MAP = {
 
 # 模板存放的基础路径
 TEMPLATE_DIR = r"C:\Users\ZhuanZ1\Desktop\rpa\zhanshuangfuben\ziyuanwenjian\biaoshi"
+def yolo页面识别():
+    # 截图
+    img = d.screenshot(format='opencv')
+    start = time.time()
 
+    # 3. 使用模型分类
+    # verbose=False 去掉控制台冗余输出
+    results = model(img, conf=0.8, verbose=False)
+
+    # 分类结果解析
+    probs = results[0].probs
+    top1_id = probs.top1
+    top1_conf = probs.top1conf.item()
+    label = results[0].names[top1_id]
+
+    # 打印结果和耗时
+    print(f"当前页面: {label} | 置信度: {top1_conf:.2f} | 耗时: {time.time() - start:.4f}s")
+    return label
 
 def 页面识别灰度模式(threshold=0.8):
     """

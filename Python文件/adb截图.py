@@ -49,6 +49,7 @@ def 单次截屏并保存():
 
 
 def setup_manual_screenshot(capture_func, save_dir="screenshots"):
+    # hh
     """
     配置手动截图功能
     :param capture_func: 你原本的截图函数 (例如 d.screenshot)

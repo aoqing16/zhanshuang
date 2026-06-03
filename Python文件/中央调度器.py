@@ -10,7 +10,7 @@ def 页面识别灰度模式子线程():
         # 注意：这里如果太快会占满CPU，建议加个微小的 sleep
         # start_time=time.time()
 
-        result = 页面识别灰度模式()
+        result = yolo页面识别()
         # print(f'子线程获取的数据: {result}')
         # 锁定，更新数据
         # print(f'子线程更新数据耗时{time.time() - start_time}')
