@@ -8,6 +8,7 @@ import cv2
 import os
 import sys
 import 共享变量
+import config
 print('模型加载中')
 model = YOLO(r'C:\Users\ZhuanZ1\runs\detect\train-8\weights\best.pt')
 model_1 = YOLO(r"C:\Users\ZhuanZ1\runs\classify\train-5\weights\best.pt")
@@ -241,7 +242,7 @@ def yolo页面识别():
 
     # 3. 使用模型分类
     # verbose=False 去掉控制台冗余输出
-    results = model_1(img, conf=0.8, verbose=False)
+    results = model_1(img, verbose=False)
 
     # 分类结果解析
     probs = results[0].probs
@@ -249,8 +250,6 @@ def yolo页面识别():
     top1_conf = probs.top1conf.item()
     label = results[0].names[top1_id]
     print(f'yolo检测函数返回结果{label}置信度：{top1_conf: 2f}')
-    # 打印结果和耗时
-    # print(f"当前页面: {label} | 置信度: {top1_conf:.2f} | 耗时: {time.time() - start:.4f}s")
     return label
 过滤后识别结果='0'
 count=0
@@ -599,24 +598,160 @@ def 章节位置初始化():
         time.sleep(0.8)
 
 
+def 检查区域是否命中章节标签黑名单(blacklist_dict=config.章节标签黑名单, roi=config.章节标签roi, threshold=0.85):
+    """
+    检测屏幕上指定区域内是否存在字典里的模板图片
+
+    :param current_img: 通过 d.screenshot(format='opencv') 拿到的三维 numpy 数组
+    :param blacklist_dict: 你的黑名单字典（包含标签名和对应的图片绝对路径）
+    :param roi: 指定区域的坐标，格式为 [x1, y1, x2, y2]。如果为 None，则全屏检测
+    :param threshold: 匹配度阈值，超过这个值认为“存在”
+    :return: 只要匹配到任何一个模板就返回 True，全都没匹配到返回 False
+    """
+    # 1. 裁剪指定区域 (ROI)
+    current_img=截图()
+    if roi:
+        x1, y1, x2, y2 = roi
+        # 记得做边界防御，防止切图超出屏幕范围
+        h, w = current_img.shape[:2]
+        crop_img = current_img[max(0, y1):min(h, y2), max(0, x1):min(w, x2)]
+        if crop_img.size == 0:
+            print("⚠️ 传入的 ROI 区域大小为 0，跳过检测。")
+            return False
+    else:
+        crop_img = current_img
+
+    # 2. 将目标区域转换为灰度图（加速匹配）
+    gray_crop = cv2.cvtColor(crop_img, cv2.COLOR_BGR2GRAY)
+
+    # 3. 遍历黑名单字典进行匹配
+    for name, path in blacklist_dict.items():
+        # 防御性编程：确保文件路径存在
+        if not os.path.exists(path):
+            print(f"⚠️ 警告：黑名单文件不存在，已跳过：{path}")
+            continue
+
+        # 读取模板并转为灰度图
+        template = cv2.imread(path, 0)
+        if template is None:
+            print(f"⚠️ 错误：无法读取图片（可能格式损坏）：{path}")
+            continue
+
+        # 检查模板图是否比裁剪后的目标图还要大，如果大则无法匹配
+        if template.shape[0] > gray_crop.shape[0] or template.shape[1] > gray_crop.shape[1]:
+            # print(f"ℹ️ 模板 [{name}] 比指定检测区域还大，无法匹配，跳过。")
+            continue
+
+        # 执行模板匹配
+        res = cv2.matchTemplate(gray_crop, template, cv2.TM_CCOEFF_NORMED)
+        _, max_val, _, _ = cv2.minMaxLoc(res)
+
+        print(f"🔍 正在比对黑名单标签 [{name}] ... 当前最高匹配度: {max_val:.4f}")
+
+        # 4. 只要有一个匹配成功，立刻返回 True
+        if max_val >= threshold:
+            print(f"🚫 命中黑名单！成功检测到标签：[{name}]，匹配度({max_val:.4f}) >= 阈值({threshold})")
+            return True
+
+    # 5. 循环结束，一个都没对上，返回 False
+    return False
+
+
+def 是否命中章节黑名单(blacklist_dict=config.章节黑名单, roi=config.章节roi, threshold=0.85):
+    """
+    检测屏幕上指定区域内是否存在字典里的模板图片
+    :param blacklist_dict: 你的黑名单字典（包含标签名和对应的图片绝对路径）
+    :param roi: 指定区域的坐标，格式为 [x1, y1, x2, y2]。如果为 None，则全屏检测
+    :param threshold: 匹配度阈值，超过这个值认为“存在”
+    :return: 只要匹配到任何一个模板就返回 True，全都没匹配到返回 False
+    """
+    # 1. 裁剪指定区域 (ROI)
+    current_img = 截图()
+    if roi:
+        x1, y1, x2, y2 = roi
+        # 记得做边界防御，防止切图超出屏幕范围
+        h, w = current_img.shape[:2]
+        crop_img = current_img[max(0, y1):min(h, y2), max(0, x1):min(w, x2)]
+        if crop_img.size == 0:
+            print("⚠️ 传入的 ROI 区域大小为 0，跳过检测。")
+            return False
+    else:
+        crop_img = current_img
+
+    # 2. 将目标区域转换为灰度图（加速匹配）
+    gray_crop = cv2.cvtColor(crop_img, cv2.COLOR_BGR2GRAY)
+
+    # 3. 遍历黑名单字典进行匹配
+    for name, path in blacklist_dict.items():
+        # 防御性编程：确保文件路径存在
+        if not os.path.exists(path):
+            print(f"⚠️ 警告：黑名单文件不存在，已跳过：{path}")
+            continue
+
+        # 读取模板并转为灰度图
+        template = cv2.imread(path, 0)
+        if template is None:
+            print(f"⚠️ 错误：无法读取图片（可能格式损坏）：{path}")
+            continue
+
+        # 检查模板图是否比裁剪后的目标图还要大，如果大则无法匹配
+        if template.shape[0] > gray_crop.shape[0] or template.shape[1] > gray_crop.shape[1]:
+            # print(f"ℹ️ 模板 [{name}] 比指定检测区域还大，无法匹配，跳过。")
+            continue
+
+        # 执行模板匹配
+        res = cv2.matchTemplate(gray_crop, template, cv2.TM_CCOEFF_NORMED)
+        _, max_val, _, _ = cv2.minMaxLoc(res)
+
+        print(f"🔍 正在比对黑名单标签 [{name}] ... 当前最高匹配度: {max_val:.4f}")
+
+        # 4. 只要有一个匹配成功，立刻返回 True
+        if max_val >= threshold:
+            print(f"🚫 命中黑名单！成功检测到标签：[{name}]，匹配度({max_val:.4f}) >= 阈值({threshold})")
+            return True
+
+    # 5. 循环结束，一个都没对上，返回 False
+    return False
 def 未通关章节定位():
     '''
     遍历判断，直到定位到没有通关标识的章节
     '''
-    滑动次数 = 0  # 初始化计数器
+    章节滑动次数 = 0  # 初始化计数器
+    #现在应该停在第一个标签页的第一个章节，先要判断是不是这个标签页就已经在黑名单中了，如果是，则直接点击下一个，如果不是，再进行章节判断
+    # 最大挑战/切换次数限制为 8 次
+    for 尝试次数 in range(1, 9):
+        print(f"正在进行第 {尝试次数} 次章节黑名单检测...")
 
+        章节标签黑名单结果 = 是否命中章节黑名单()
+
+        if 章节标签黑名单结果:
+            print(f"🚫 第 {尝试次数} 次检测：命中黑名单！正在执行切换动作...")
+
+            下一章ui = (138, 963)
+            下一章ui = 坐标随机(下一章ui, left=120, right=120, up=15, down=15)
+            adb_click(下一章ui)
+
+            # 适当增加一点等待动画的时间，防止连续点击过快导致游戏 UI 没刷新过来
+            time.sleep(1.0)
+        else:
+            print("🎉 检测通过：当前章节不在黑名单中，退出拦截循环。")
+            break
+    else:
+        # 💡 这是一个高级语法：当 for 循环完整跑满 8 次且没有触发 break 时，会走到这里
+        print("⚠️ 警告：已经连续切换了 8 次章节，依然处于黑名单中！脚本可能已迷路，建议触发兜底策略。")
+        # 这里可以写你的兜底逻辑，比如 return 退出函数，或者报错截图
     while True:
         通关标志 = 图像是否存在('ziyuanwenjian/biaoshi/img_16.png')
 
         if 通关标志:
             # 执行左滑
             d.swipe_ext("left", scale=0.2)
-            滑动次数 += 1  # 计数加 1
-            print(f"检测到通关标志，已累计向左滑动 {滑动次数} 次")
+            章节滑动次数 += 1  # 计数加 1
+            print(f"检测到通关标志，已累计向左滑动 {章节滑动次数} 次")
             time.sleep(1)
 
             # 当滑动满 7 次时触发
-            if 滑动次数 == 7:
+            if 章节滑动次数 == 7:
                 print("已满 7 次，执行点击动作...")
 
                 # 执行点击（请替换为你的实际目标坐标）
@@ -626,13 +761,19 @@ def 未通关章节定位():
                 time.sleep(0.6)
 
                 # 【核心修改】：重置计数器，不退出，让 while 循环继续重复执行
-                滑动次数 = 0
+                章节滑动次数 = 0
                 print("点击完成，重置计数，继续当前函数循环...")
 
         else:
-            # 如果没检测到通关标志，说明找到了未通关章节，退出循环
-            print("未检测到通关标志，已定位到未通关章节。")
-            break
+            章节黑名单结果=是否命中章节黑名单()
+            if 章节黑名单结果:
+                d.swipe_ext("left", scale=0.2)
+                章节滑动次数 += 1  # 计数加 1
+            else:
+                print("未检测到通关标志切当前章节未在黑名单中，已定位到未通关章节。")
+                break
+
+
 
 
 def 普攻():
