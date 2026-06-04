@@ -6,14 +6,7 @@ data_lock = threading.Lock()
 def yolo页面检测子线程():
 
     while True:
-        # 这里模拟你的识别过程
-        # 注意：这里如果太快会占满CPU，建议加个微小的 sleep
-        # start_time=time.time()
-
         result = yolo页面检测主函数()
-        # print(f'子线程获取的数据: {result}')
-        # 锁定，更新数据
-        # print(f'子线程更新数据耗时{time.time() - start_time}')
         with data_lock:
             共享变量.latest_result = result
 

@@ -10,8 +10,8 @@ import sys
 import 共享变量
 import config
 print('模型加载中')
-model = YOLO(r'C:\Users\ZhuanZ1\runs\detect\train-8\weights\best.pt')
-model_1 = YOLO(r"C:\Users\ZhuanZ1\runs\classify\train-5\weights\best.pt")
+model = YOLO(r'C:\Users\ZhuanZ1\runs\detect\train-8\weights\best.pt')#目标检测模型
+model_1 = YOLO(r"C:\Users\ZhuanZ1\runs\classify\train-6\weights\best.pt")#分类模型
 # from Python文件.中央调度器 import 页面识别
 
 # 1. 连接设备
@@ -249,24 +249,40 @@ def yolo页面识别():
     top1_id = probs.top1
     top1_conf = probs.top1conf.item()
     label = results[0].names[top1_id]
-    print(f'yolo检测函数返回结果{label}置信度：{top1_conf: 2f}')
-    return label
-过滤后识别结果='0'
-count=0
-def yolo过滤器(label):
-    global count,过滤后识别结果
-    if label==过滤后识别结果:
+    return label,top1_conf
+
+
+过滤后识别结果 = '0'
+count = 0
+def yolo过滤器(result_tuple):
+    global count, 过滤后识别结果
+
+    # 1. 解包元组，获取标签和置信度
+    label, conf = result_tuple
+
+    # 2. 新增：置信度拦截门槛
+    if conf < 0.85:
+        # 置信度太低，说明结果不可靠，直接重置计数器
+        print(f"⚠️ 过滤器拦截：[{label}] 置信度过低 ({conf:.4f} < 0.85)，重置计数")
+        过滤后识别结果 = '0'
+        count = 0
+        return 0
+
+    # 3. 走原有的连续次数判定逻辑
+    if label == 过滤后识别结果:
         count += 1
     else:
-        过滤后识别结果=label
-        count=1
-    if count>=2:
+        过滤后识别结果 = label
+        count = 1
+
+    # 4. 判断是否连续满足 2 次
+    if count >= 3:
         return 过滤后识别结果
     else:
         return 0
-
 def yolo页面检测主函数():
     ll=yolo页面识别()
+    print(f'yolo模型识别结果：【{ll[0]}】    置信度：{ll[1]}')
     过滤结果=yolo过滤器(ll)
     return 过滤结果
 
@@ -981,4 +997,6 @@ def 路径向导(relative_path):
 
 
 if __name__ == '__main__':
-    未通关章节定位()
+    while True:
+        print(f'过滤后结果：{yolo页面检测主函数()}')
+        time.sleep(1.5)
