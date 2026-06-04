@@ -13,6 +13,7 @@ print(f'项目根目录路径：{项目根目录路径}')
 章节标签roi=[0,694,404,760]
 章节黑名单 = {
     "升格-苦行之旅": os.path.join(项目根目录路径, "ziyuanwenjian",'biaoshi','img_20.png'),
+    "升格-终末预览": os.path.join(项目根目录路径, "ziyuanwenjian",'biaoshi','img_22.png'),
 }
 章节roi = [556, 956, 1943, 1158]
 print(章节标签黑名单)
