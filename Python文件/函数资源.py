@@ -216,6 +216,34 @@ def adb_click(coord):
         return
 
 
+import random
+import time
+
+
+def 区域内随机坐标点击(x1, x2, y1, y2):
+    '''
+    在指定的矩形区域 (x1, y1) 到 (x2, y2) 内生成随机坐标并执行 ADB 点击
+    :param x1: 区域左侧 X 坐标
+    :param x2: 区域右侧 X 坐标
+    :param y1: 区域顶部 Y 坐标
+    :param y2: 区域底部 Y 坐标
+    '''
+    # 💡 健壮性处理：防止误传参数（比如把左和右写反了导致报错）
+    min_x, max_x = min(x1, x2), max(x1, x2)
+    min_y, max_y = min(y1, y2), max(y1, y2)
+
+    # 在区间内随机生成一个整数坐标
+    random_x = random.randint(min_x, max_x)
+    random_y = random.randint(min_y, max_y)
+
+    目标坐标 = (random_x, random_y)
+    print(f"🎯 [区域防检测点击] 规划区域:({x1},{y1})->({x2},{y2})，实际随机落点: {目标坐标}")
+
+    # 执行你原有的 adb 点击函数
+    adb_click(目标坐标)
+
+    # 顺手带个极其微小的随机等待（0.05~0.15秒），让点击频率也随机化，反作弊效果更佳
+    time.sleep(random.uniform(0.05, 0.15))
 
 TEMPLATE_MAP = {
     "战斗副本详情页": "img_13.png",

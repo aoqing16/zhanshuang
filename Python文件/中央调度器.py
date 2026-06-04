@@ -1,4 +1,6 @@
+from Python文件.adb截图 import 监听按键截图
 from 页面操作函数 import *
+import adb截图
 # 定义映射表：名称 -> 文件名
 import 共享变量
 # 定义一个锁，防止主线程读取时，后台线程正在写入，造成数据错乱
@@ -11,6 +13,8 @@ def yolo页面检测子线程():
             共享变量.latest_result = result
 
         time.sleep(0.1)  # 适当休息，避免识别线程跑得太快把CPU吃满
+def 截图子线程():
+    监听按键截图()
 def 页面匹配():
     战斗标识符=战斗场景检测()
     if 战斗标识符:
@@ -51,6 +55,8 @@ def 页面匹配():
 
 if __name__ == '__main__':
     t = threading.Thread(target=yolo页面检测子线程, daemon=True)
+    t.start()
+    t = threading.Thread(target=截图子线程, daemon=True)
     t.start()
     time.sleep(3)
     while True:

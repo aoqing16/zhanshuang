@@ -74,6 +74,9 @@ def 战后结算():
     图像随机位置点击(路径向导('ziyuanwenjian/UI/img_6.png'))
 def 播放剧情():
     图像随机位置点击(路径向导('ziyuanwenjian/UI/img_7.png'))
+def 副本战斗对话页():
+    区域内随机坐标点击(1567,1721,1200,1247)
+    区域内随机坐标点击(2206,2312,1071,1183)
 
 if __name__ == '__main__':
     # while True:

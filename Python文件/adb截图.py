@@ -47,7 +47,7 @@ def 单次截屏并保存():
     cv2.imwrite(save_path, img)
     print(f'已保存：: {save_path}')
 
-
+ 
 def setup_manual_screenshot(capture_func, save_dir="screenshots"):
     # hh
     """
