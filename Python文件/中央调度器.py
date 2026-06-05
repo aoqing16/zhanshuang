@@ -15,9 +15,16 @@ def yolo页面检测子线程():
         time.sleep(0.1)  # 适当休息，避免识别线程跑得太快把CPU吃满
 def 截图子线程():
     监听按键截图()
+线程初始化=0
 def 页面匹配():
     战斗标识符=战斗场景检测()
     if 战斗标识符:
+        global 线程初始化
+        共享变量.停止寻敌信号=False
+        if 线程初始化==0:
+            t = threading.Thread(target=寻敌子线程, daemon=True)
+            t.start()
+            线程初始化+=1
         战斗主函数()
         ui变化检测(['战斗加载页'])
     # page_name=页面识别灰度模式()
@@ -61,6 +68,7 @@ if __name__ == '__main__':
     t.start()
     t = threading.Thread(target=截图子线程, daemon=True)
     t.start()
+
     time.sleep(3)
     while True:
         页面匹配()

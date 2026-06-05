@@ -492,6 +492,15 @@ def 寻敌操作函数():
     if 寻敌检测主函数():
         print('执行寻敌操作')
         寻敌()
+        time.sleep(5)
+# 共享变量.停止寻敌信号= False
+def 寻敌子线程():
+    print('子线程运行中')
+    while True:
+        while not 共享变量.停止寻敌信号:
+            print('寻敌中')
+            寻敌操作函数()
+    print('寻敌子线程已结束')
 
 def 页面识别(threshold=0.8):
     """
@@ -1063,8 +1072,6 @@ def 寻敌():
     zuo = (2223, 771)
     xy = 坐标随机(zuo, left=40, right=40, up=40, down=40)
     adb_click(xy)
-def 寻敌子线程():
-    pass
 def 消球检测(img):
     BALL_COLORS = {
         # "红黄": {"lower": np.array([0, 165, 175]), "upper": np.array([179, 191, 236])},
@@ -1212,7 +1219,9 @@ def 战斗主函数():
         except Exception as e:
             print(f"战斗发生异常: {e}")
             time.sleep(1)
-
+    print('退出战斗循环，正在结束子线程')
+    共享变量.停止寻敌信号=True
+    print("🎉 子线程已经彻底凉透，主线程可以安心继续推进了。")
 
 def 路径向导(relative_path):
     """
