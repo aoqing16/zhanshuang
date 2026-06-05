@@ -13,7 +13,7 @@ import 共享变量
 import config
 print('模型加载中')
 model = YOLO(r'C:\Users\ZhuanZ1\runs\detect\train-8\weights\best.pt')#目标检测模型
-model_1 = YOLO(r"C:\Users\ZhuanZ1\runs\classify\train-7\weights\best.pt")#分类模型
+model_1 = YOLO(r"C:\Users\ZhuanZ1\runs\classify\train-8\weights\best.pt")#分类模型
 # from Python文件.中央调度器 import 页面识别
 
 # 1. 连接设备
@@ -500,6 +500,7 @@ def 寻敌子线程():
         while not 共享变量.停止寻敌信号:
             print('寻敌中')
             寻敌操作函数()
+        time.sleep(0.5)
     print('寻敌子线程已结束')
 
 def 页面识别(threshold=0.8):
@@ -639,101 +640,105 @@ def 获取最右侧未通关关卡调试版(img, boxes, threshold=0.7):
     """
     最严格进度筛选逻辑（全面加强调试日志版）
     """
-    if not boxes:
-        print("\n[🔍 调试-异常] ❌ 未检测到任何关卡区域 (boxes为空)")
-        return 0
+    try:
+        if not boxes:
+            print("\n[🔍 调试-异常] ❌ 未检测到任何关卡区域 (boxes为空)")
+            return 0
 
-    print(f"\n================ 🔍 关卡筛选雷达启动 ================")
-    print(f"[🔍 调试-输入] 屏幕当前检测到 {len(boxes)} 个关卡目标。")
+        print(f"\n================ 🔍 关卡筛选雷达启动 ================")
+        print(f"[🔍 调试-输入] 屏幕当前检测到 {len(boxes)} 个关卡目标。")
 
-    # ———————— 第一步：获取全局最右边界 (x2) ————————
-    # 增加排序日志，让你看到所有关卡的右边界排布
-    all_x2s = [int(box[2]) for box in boxes]
-    max_x2_overall = max(all_x2s)
-    print(f"[🔍 调试-全局] 所有关卡右边界坐标列表: {sorted(all_x2s)}")
-    print(f"[🔍 调试-全局] 🎯 认定当前屏幕【全局最右侧边界】 max_x2_overall = {max_x2_overall}")
+        # ———————— 第一步：获取全局最右边界 (x2) ————————
+        # 增加排序日志，让你看到所有关卡的右边界排布
+        all_x2s = [int(box[2]) for box in boxes]
+        max_x2_overall = max(all_x2s)
+        print(f"[🔍 调试-全局] 所有关卡右边界坐标列表: {sorted(all_x2s)}")
+        print(f"[🔍 调试-全局] 🎯 认定当前屏幕【全局最右侧边界】 max_x2_overall = {max_x2_overall}")
 
-    # ———————— 第二步：排除已通关区域，找出候选者 ————————
-    uncompleted_candidates = []
+        # ———————— 第二步：排除已通关区域，找出候选者 ————————
+        uncompleted_candidates = []
 
-    # 💡 引入 enumerate 给关卡编个号 (从1开始)，方便在日志里追踪具体是哪一个
-    for idx, box in enumerate(boxes, start=1):
-        x1, y1, x2, y2 = map(int, box)
-        center_x, center_y = (x1 + x2) // 2, (y1 + y2) // 2
+        # 💡 引入 enumerate 给关卡编个号 (从1开始)，方便在日志里追踪具体是哪一个
+        for idx, box in enumerate(boxes, start=1):
+            x1, y1, x2, y2 = map(int, box)
+            center_x, center_y = (x1 + x2) // 2, (y1 + y2) // 2
 
-        print(f"\n--- 📦 正在排查 编号#{idx} 关卡 ---")
-        print(f" 坐标范围: ({x1}, {y1}) -> ({x2}, {y2}) | 中心点: ({center_x}, {center_y})")
+            print(f"\n--- 📦 正在排查 编号#{idx} 关卡 ---")
+            print(f" 坐标范围: ({x1}, {y1}) -> ({x2}, {y2}) | 中心点: ({center_x}, {center_y})")
 
-        # 获取 ROI 并检查有效性
-        roi = img[max(0, y1):min(img.shape[0], y2), max(0, x1):min(img.shape[1], x2)]
-        if roi.size == 0:
-            print(f" ⚠️ [警告] 编号#{idx} 关卡的 ROI 裁剪区域大小为 0，跳过处理。")
-            continue
+            # 获取 ROI 并检查有效性
+            roi = img[max(0, y1):min(img.shape[0], y2), max(0, x1):min(img.shape[1], x2)]
+            if roi.size == 0:
+                print(f" ⚠️ [警告] 编号#{idx} 关卡的 ROI 裁剪区域大小为 0，跳过处理。")
+                continue
 
-        is_occupied = False
-        roi_hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
-        roi_gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+            is_occupied = False
+            roi_hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+            roi_gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
 
-        for state, data in LOADED_TEMPLATES.items():
-            mask = cv2.inRange(roi_hsv, data['hsv_range'][0], data['hsv_range'][1])
-            pixel_count = cv2.countNonZero(mask)
+            for state, data in LOADED_TEMPLATES.items():
+                mask = cv2.inRange(roi_hsv, data['hsv_range'][0], data['hsv_range'][1])
+                pixel_count = cv2.countNonZero(mask)
 
-            # 💡 详细打印当前状态模板的匹配过程
-            if pixel_count > 100:
-                masked_roi = cv2.bitwise_and(roi_gray, roi_gray, mask=mask)
-                res = cv2.matchTemplate(masked_roi, data['gray'], cv2.TM_CCOEFF_NORMED)
-                _, max_val, _, _ = cv2.minMaxLoc(res)
+                # 💡 详细打印当前状态模板的匹配过程
+                if pixel_count > 100:
+                    masked_roi = cv2.bitwise_and(roi_gray, roi_gray, mask=mask)
+                    res = cv2.matchTemplate(masked_roi, data['gray'], cv2.TM_CCOEFF_NORMED)
+                    _, max_val, _, _ = cv2.minMaxLoc(res)
 
-                print(
-                    f" 🔍 [匹配中] 匹配模板:[{state}] | 遮罩像素数:{pixel_count} | 匹配置信度:{max_val:.4f} (阈值:{threshold})")
+                    print(
+                        f" 🔍 [匹配中] 匹配模板:[{state}] | 遮罩像素数:{pixel_count} | 匹配置信度:{max_val:.4f} (阈值:{threshold})")
 
-                if max_val >= threshold:
-                    print(f" 🛑 [结果] 编号#{idx} 匹配成功！判定为：【已通关/已被占领】")
-                    is_occupied = True
-                    break
-            else:
-                # 记录一下为什么连模板匹配都没进（经常因为色彩范围不对导致像素不够）
-                print(f" ⏭️ [跳过] 匹配模板:[{state}] | 遮罩绿色/特定色像素仅有 {pixel_count} (未达100门槛)")
+                    if max_val >= threshold:
+                        print(f" 🛑 [结果] 编号#{idx} 匹配成功！判定为：【已通关/已被占领】")
+                        is_occupied = True
+                        break
+                else:
+                    # 记录一下为什么连模板匹配都没进（经常因为色彩范围不对导致像素不够）
+                    print(f" ⏭️ [跳过] 匹配模板:[{state}] | 遮罩绿色/特定色像素仅有 {pixel_count} (未达100门槛)")
 
-        # 将未被匹配到的（未通关）存入候选
-        if not is_occupied:
-            print(f" ✨ [结果] 编号#{idx} 未检测到任何通关标识 -> 【加入未通关候选队列】")
-            uncompleted_candidates.append({
-                'id': idx,
-                'center': (center_x, center_y),
-                'x2': x2
-            })
+            # 将未被匹配到的（未通关）存入候选
+            if not is_occupied:
+                print(f" ✨ [结果] 编号#{idx} 未检测到任何通关标识 -> 【加入未通关候选队列】")
+                uncompleted_candidates.append({
+                    'id': idx,
+                    'center': (center_x, center_y),
+                    'x2': x2
+                })
 
-    # ———————— 第三步 & 第四步：找出候选中的最右，并与全局做比较 ————————
-    print(f"\n================ ⚖️ 最终校验决策阶段 ================")
-    if not uncompleted_candidates:
-        print("[🔍 调试-决策] 😭 候选队列为空：屏幕上所有关卡均已被通关，脚本无操作。")
-        return 0
+        # ———————— 第三步 & 第四步：找出候选中的最右，并与全局做比较 ————————
+        print(f"\n================ ⚖️ 最终校验决策阶段 ================")
+        if not uncompleted_candidates:
+            print("[🔍 调试-决策] 😭 候选队列为空：屏幕上所有关卡均已被通关，脚本无操作。")
+            return 0
 
-    print(f"[🔍 调试-决策] 候选队列中共有 {len(uncompleted_candidates)} 个未通关关卡：")
-    for cand in uncompleted_candidates:
-        print(f"  -> 候选 编号#{cand['id']} | 右边界 x2 = {cand['x2']} | 中心点 = {cand['center']}")
+        print(f"[🔍 调试-决策] 候选队列中共有 {len(uncompleted_candidates)} 个未通关关卡：")
+        for cand in uncompleted_candidates:
+            print(f"  -> 候选 编号#{cand['id']} | 右边界 x2 = {cand['x2']} | 中心点 = {cand['center']}")
 
-    # 找出剩余未通关关卡中，最靠右的那一个
-    best_candidate = max(uncompleted_candidates, key=lambda c: c['x2'])
-    candidate_max_x2 = best_candidate['x2']
+        # 找出剩余未通关关卡中，最靠右的那一个
+        best_candidate = max(uncompleted_candidates, key=lambda c: c['x2'])
+        candidate_max_x2 = best_candidate['x2']
 
-    # 计算差距，防止因为 1~2 个像素的微小变动错失点击机会
-    pixel_diff = abs(candidate_max_x2 - max_x2_overall)
-    print(f"\n[🔍 调试-对比] 候选最右边界 x2 = {candidate_max_x2} (来自编号#{best_candidate['id']})")
-    print(f"[🔍 调试-对比] 全局最右边界 x2 = {max_x2_overall}")
-    print(f"[🔍 调试-对比] 两者像素绝对差距: {pixel_diff} 像素")
+        # 计算差距，防止因为 1~2 个像素的微小变动错失点击机会
+        pixel_diff = abs(candidate_max_x2 - max_x2_overall)
+        print(f"\n[🔍 调试-对比] 候选最右边界 x2 = {candidate_max_x2} (来自编号#{best_candidate['id']})")
+        print(f"[🔍 调试-对比] 全局最右边界 x2 = {max_x2_overall}")
+        print(f"[🔍 调试-对比] 两者像素绝对差距: {pixel_diff} 像素")
 
-    # 【最终核心逻辑校验】
-    # 💡 考虑实际运行中可能有 1-2 像素的微小波动，这里我依然维持你绝对相等的严格逻辑，但打印极度清晰
-    if candidate_max_x2 == max_x2_overall:
-        print(f" 🟩 [校验通过] ✅ 最新的关卡 (编号#{best_candidate['id']}) 尚未通关！准备返回中心点进行点击。")
-        print(f"====================================================\n")
-        return best_candidate['center']
-    else:
-        print(f" 🟥 [校验失败] ❌ 物理位置最靠右的图标已经是 '已通关' 状态。")
-        print(f" 提示信息: 左侧虽然存在未通关关卡 (编号#{best_candidate['id']}), 但为了避免回头打旧关卡，执行安全拦截。")
-        print(f"====================================================\n")
+        # 【最终核心逻辑校验】
+        # 💡 考虑实际运行中可能有 1-2 像素的微小波动，这里我依然维持你绝对相等的严格逻辑，但打印极度清晰
+        if candidate_max_x2 == max_x2_overall:
+            print(f" 🟩 [校验通过] ✅ 最新的关卡 (编号#{best_candidate['id']}) 尚未通关！准备返回中心点进行点击。")
+            print(f"====================================================\n")
+            return best_candidate['center']
+        else:
+            print(f" 🟥 [校验失败] ❌ 物理位置最靠右的图标已经是 '已通关' 状态。")
+            print(f" 提示信息: 左侧虽然存在未通关关卡 (编号#{best_candidate['id']}), 但为了避免回头打旧关卡，执行安全拦截。")
+            print(f"====================================================\n")
+            return 0
+    except:
+        print('获取最右侧关卡函数出现错误，返回0')
         return 0
 def 获取最右侧未通关关卡(img, boxes, threshold=0.85):
     """
@@ -1247,8 +1252,6 @@ def 路径向导(relative_path):
 
 
 if __name__ == '__main__':
-    count=0
-    while True:
-        寻敌操作函数()
-        print(count)
-        count+=1
+    img = 截图()
+    n = yolo检测(img)
+    m = 获取最右侧未通关关卡调试版(img, n)
