@@ -25,9 +25,16 @@ def 副本首页():
                 print(f'adb点击耗时为：{time.time() - start_time}')
                 break
         else:#滑动三次后仍未发现新关卡，执行退出副本首页
-            图像随机位置点击(路径向导('ziyuanwenjian/UI/img_10.png'))
-            print('正在退出副本首页')
-            break
+            if 图像是否存在从配置文件中获取文件路径('普通剧情'):
+                图像随机位置点击配置文件('普通剧情按钮')
+                time.sleep(0.5)
+                图像随机位置点击配置文件('隐藏剧情按钮')
+                count=0
+                time.sleep(0.5)
+            else:
+                图像随机位置点击(路径向导('ziyuanwenjian/UI/img_10.png'))
+                print('正在退出副本首页')
+                break
 
 def 副本详情页():
     zuobiao = 图像坐标获取(路径向导('ziyuanwenjian/UI/img_1.png'))
@@ -91,4 +98,3 @@ def 副本战斗对话页():
 if __name__ == '__main__':
     # while True:
     副本首页()
-    print('退出副本首页函数')

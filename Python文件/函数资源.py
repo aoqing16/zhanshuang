@@ -78,6 +78,40 @@ def 图像是否存在(img_name, threshold=0.8, gray_mode=False):
     # 3. 返回匹配结果
     # print(f"DEBUG: {img_name} 匹配度: {max_val:.4f}") # 调试用
     return max_val >= threshold
+
+
+def 图像是否存在从配置文件中获取文件路径(key, threshold=0.8, gray_mode=False):
+    """
+    检测图像是否存在
+    :param key: 模板在配置文件中图片标识符清单字典中的键名
+    :param threshold: 匹配阈值
+    :param gray_mode: 是否开启灰度匹配模式
+    :return: 存在返回 True, 不存在返回 False
+    """
+    TEMPLATE_PATH = config.图片标识符清单.get(key)
+    # 1. 读取模板
+    # 如果开启灰度，直接读灰度；否则读彩色
+    flag = cv2.IMREAD_GRAYSCALE if gray_mode else cv2.IMREAD_COLOR
+    template = cv2.imread(TEMPLATE_PATH, flag)
+
+    if template is None:
+        print(f"错误：无法读取模板图片 {TEMPLATE_PATH}")
+        return False
+
+    # 1.1 获取并处理屏幕截图
+    img_color = 截图()
+    if gray_mode:
+        img_source = cv2.cvtColor(img_color, cv2.COLOR_BGR2GRAY)
+    else:
+        img_source = img_color
+
+    # 2. 执行模板匹配
+    res = cv2.matchTemplate(img_source, template, cv2.TM_CCOEFF_NORMED)
+    _, max_val, _, _ = cv2.minMaxLoc(res)
+
+    # 3. 返回匹配结果
+    # print(f"DEBUG: {img_name} 匹配度: {max_val:.4f}") # 调试用
+    return max_val >= threshold
 def 图像坐标获取灰度模式(img_name, threshold=0.7):
     # 拼接图片路径
     # BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -148,32 +182,6 @@ def 图像坐标获取(img_name, threshold=0.8):
 
     return None
 
-
-def 图像存在判断(img,img_name, threshold=0.8, ):
-    """
-    匹配模板并在匹配区域内返回一个随机坐标
-    :param img:
-    :param img_name: 模板图片文件名
-    :param threshold: 匹配阈值
-    :param padding: 内缩量，防止点到边缘（默认5像素）
-    :return: (rand_x, rand_y) 或 None
-    """
-    # 拼接路径
-    # BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    # TEMPLATE_PATH = os.path.join(BASE_DIR, img_name)
-    TEMPLATE_PATH=路径向导(img_name)
-    template = cv2.imread(TEMPLATE_PATH, cv2.IMREAD_COLOR)
-    if template is None:
-        print(f"错误：无法读取模板图片 {TEMPLATE_PATH}")
-        return None
-    h, w = template.shape[:2]
-    res = cv2.matchTemplate(img, template, cv2.TM_CCOEFF_NORMED)
-    _, max_val, _, max_loc = cv2.minMaxLoc(res)
-
-    if max_val >= threshold:
-        # 获取匹配区域的左上角 (x, y)
-        return 1
-    return None
 def 图像随机位置点击(img_name, threshold=0.8, padding=0):
     """
     匹配模板并在匹配区域内返回一个随机坐标
@@ -211,6 +219,47 @@ def 图像随机位置点击(img_name, threshold=0.8, padding=0):
         rand_x = random.randint(x_min, x_max)
         rand_y = random.randint(y_min, y_max)
         d.click(rand_x,rand_y)
+
+    return None
+
+
+def 图像随机位置点击配置文件(key, threshold=0.8, padding=0):
+    """
+    匹配模板并在匹配区域内返回一个随机坐标
+    :param img_name: 模板图片相对路径ziyuanwenjian/biaoshi/img_24.png
+    :param threshold: 匹配阈值
+    :param padding: 内缩量，防止点到边缘（默认5像素）
+    :return: (rand_x, rand_y) 或 None
+    """
+    # 拼接路径
+    # BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    # TEMPLATE_PATH = os.path.join(BASE_DIR, img_name)
+    TEMPLATE_PATH = config.图片标识符清单.get(key)
+    template = cv2.imread(TEMPLATE_PATH, cv2.IMREAD_COLOR)
+    if template is None:
+        print(f"错误：无法读取模板图片 {TEMPLATE_PATH}")
+        return None
+    img = d.screenshot(format='opencv')
+
+    h, w = template.shape[:2]
+    res = cv2.matchTemplate(img, template, cv2.TM_CCOEFF_NORMED)
+    _, max_val, _, max_loc = cv2.minMaxLoc(res)
+
+    if max_val >= threshold:
+        # 获取匹配区域的左上角 (x, y)
+        x1, y1 = max_loc
+
+        # 计算随机范围，加入 padding 保护，确保点在按钮内侧
+        # 确保 width 和 height 大于 2*padding，否则范围无效
+        x_min = x1 + padding
+        x_max = x1 + w - padding
+        y_min = y1 + padding
+        y_max = y1 + h - padding
+
+        # 随机生成坐标
+        rand_x = random.randint(x_min, x_max)
+        rand_y = random.randint(y_min, y_max)
+        d.click(rand_x, rand_y)
 
     return None
 
@@ -1275,14 +1324,14 @@ def 黑名单更新(img):
         :param img: OpenCV 格式的图片矩阵
         """
     # 1. 防御性创建资源文件夹
-    if not os.path.exists(config.标识符路径):
-        os.makedirs(config.标识符路径)
+    if not os.path.exists(config.标识符文件夹路径):
+        os.makedirs(config.标识符文件夹路径)
 
     # 2. 自动检测序号，避免文件名冲突
     序号 = 0
     while True:
         图片名称 = f"img_{序号}.png"
-        全路径 = os.path.join(config.标识符路径, 图片名称)
+        全路径 = os.path.join(config.标识符文件夹路径, 图片名称)
         if not os.path.exists(全路径):
             break
         序号 += 1
@@ -1336,8 +1385,4 @@ def 路径向导(relative_path):
 
 
 if __name__ == '__main__':
-    img=截图()
-    黑名单更新(img)
-    importlib.reload(config)
-    import config
-    print(config.章节黑名单)
+    print(图像是否存在从配置文件中获取文件路径('普通剧情'))

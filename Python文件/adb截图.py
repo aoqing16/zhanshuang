@@ -10,6 +10,11 @@ d = u2.connect('127.0.0.1:16384')
 def 截图():
     img = d.screenshot(format='opencv')
     return img
+
+
+def 单次截图并保存固定名():
+    img = d.screenshot(format='opencv')
+    cv2.imwrite('adb.png', img)
 def hsv过滤截图():
 
 
@@ -35,7 +40,7 @@ def hsv过滤截图():
     cv2.imwrite('adbxi.png', filtered_img)
 
 
-def 单次截屏并保存():
+def 单次截屏并保存随机名():
     save_dir = "screenshots"
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
@@ -87,6 +92,6 @@ def 监听按键截图():
     except KeyboardInterrupt:
         keyboard.unhook_all()
 if __name__ == '__main__':
-    单次截屏并保存()
+    单次截图并保存固定名()
     # keyboard.add_hotkey('space', 截图触发逻辑)
     # pass
