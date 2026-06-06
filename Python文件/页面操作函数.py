@@ -3,6 +3,10 @@ import time
 
 def 副本首页():
     count=0
+    if 共享变量.超时信号:
+        图像随机位置点击(路径向导('ziyuanwenjian/UI/img_10.png'))
+        print('副本超时退出，正在退出副本首页')
+        return
     while True:
         img = 截图()
         n = yolo检测(img)
@@ -53,7 +57,12 @@ def 战斗副本详情页():
 def 章节首页():
     章节标签位置初始化()
     章节位置初始化()
+    print(f'重载前章节黑名单：{config.章节黑名单}')
+    importlib.reload(config)
+    print(f'重载后章节黑名单：{config.章节黑名单}')
     未通关章节定位()
+    共享变量.章节名截图=区域截图(650,1037,951,1108)
+    共享变量.超时信号=False
     坐标=(1710,707)
     坐标=坐标随机(坐标,left=500,right=500,up=300,down=300)
     adb_click(坐标)

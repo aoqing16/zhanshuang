@@ -1,8 +1,6 @@
 import threading
 import random
 import time
-
-from networkx.algorithms.centrality import degree_alg
 from ultralytics import YOLO
 import numpy as np
 import uiautomator2 as u2
@@ -11,6 +9,7 @@ import os
 import sys
 import 共享变量
 import config
+import importlib
 print('模型加载中')
 model = YOLO(r'C:\Users\ZhuanZ1\runs\detect\train-8\weights\best.pt')#目标检测模型
 model_1 = YOLO(r"C:\Users\ZhuanZ1\runs\classify\train-8\weights\best.pt")#分类模型
@@ -23,6 +22,26 @@ def 截图():
     img = d.screenshot(format='opencv')
     return img
 
+
+def 区域截图(x1=None, y1=None, x2=None, y2=None):
+    """
+    指定区域截图
+    :param x1: 左上角横坐标
+    :param y1: 左上角纵坐标
+    :param x2: 右下角横坐标
+    :param y2: 右下角纵坐标
+    :return: OpenCV 格式的图片矩阵（BGR）
+    """
+    # 1. 依然先获取全屏的 OpenCV 图像
+    img = d.screenshot(format='opencv')
+
+    # 2. 只有当四个坐标都传了的时候，才进行区域裁剪
+    if x1 is not None and y1 is not None and x2 is not None and y2 is not None:
+        # ⚠️ 核心：把 X 和 Y 调换位置，因为 NumPy 切片是 [y轴范围, x轴范围]
+        # 同时强转成 int，防止浮点数导致切片失败
+        img = img[int(y1):int(y2), int(x1):int(x2)]
+
+    return img
 
 def 图像是否存在(img_name, threshold=0.8, gray_mode=False):
     """
@@ -537,7 +556,7 @@ def 页面识别(threshold=0.8):
             detected_names.append(name)
 
     return detected_names
-def ui变化检测(标识符,timeout=2,interval=0.1):
+def ui变化检测(标识符,timeout=3.5,interval=0.1):
     start_time = time.time()
     while time.time() - start_time < timeout:
         if 共享变量.latest_result!=标识符:
@@ -1000,7 +1019,7 @@ def 未通关章节定位():
     for 尝试次数 in range(1, 9):
         print(f"正在进行第 {尝试次数} 次章节标签黑名单检测...")
 
-        章节标签黑名单结果 = 检查区域是否命中章节标签黑名单()
+        章节标签黑名单结果 = 检查区域是否命中章节标签黑名单(blacklist_dict=config.章节标签黑名单)
 
         if 章节标签黑名单结果:
             print(f"🚫 第 {尝试次数} 次检测：命中黑名单！正在执行切换动作...")
@@ -1030,13 +1049,13 @@ def 未通关章节定位():
 
             # 当滑动满 7 次时触发
         else:
-            章节黑名单结果=是否命中章节黑名单()
+            章节黑名单结果=是否命中章节黑名单(blacklist_dict=config.章节黑名单)
             if 章节黑名单结果:
                 d.swipe_ext("left", scale=0.2)
                 章节滑动次数 += 1  # 计数加 1
                 time.sleep(1)
             else:
-                print("未检测到通关标志切当前章节未在黑名单中，已定位到未通关章节。")
+                print("未检测到通关标志且当前章节未在黑名单中，已定位到未通关章节。")
                 break
         if 章节滑动次数 == 7:
             print("已满 7 次，执行点击动作...")
@@ -1182,16 +1201,18 @@ def 战斗退出():
     图像随机位置点击('ziyuanwenjian/biaoshi/img_23.png')
     time.sleep(0.8)
     图像随机位置点击('ziyuanwenjian/biaoshi/img_24.png')
-    time.sleep(1)
+    time.sleep(4)
     区域内随机坐标点击(607,1955,494,1220)
 def 战斗主函数():
     empty_count = 0
-    while True:
-        start_time = time.perf_counter()
+    start_time_1 = time.time()
+    print('开始战斗计时')
+    while not 共享变量.超时信号:
+        if time.time() - start_time_1 > 5:
+            共享变量.超时信号 = True
+            print('副本已超时，正在执行退出')
+            break
         img = 截图()
-        end_time = time.perf_counter()
-        elapsed_time = end_time - start_time
-        # print(f'截图耗时：【{elapsed_time}】')
         try:
             # 1. 优先级最高：闪避检测
             n = 战斗标识检测(img)
@@ -1240,9 +1261,57 @@ def 战斗主函数():
             print(f"战斗发生异常: {e}")
             time.sleep(1)
     print('退出战斗循环，正在结束子线程')
-    共享变量.停止寻敌信号=True
+    共享变量.停止寻敌信号 = True
     print("🎉 子线程已经彻底凉透，主线程可以安心继续推进了。")
+    if 共享变量.超时信号:
+        print('副本超时，正在执行退出并更新黑名单')
+        战斗退出()
+        黑名单更新(共享变量.章节名截图)
 
+
+def 黑名单更新(img):
+    """
+        自动随机生成章节名，保存图片，并直接写入 config.py 源代码实现永久记忆
+        :param img: OpenCV 格式的图片矩阵
+        """
+    # 1. 防御性创建资源文件夹
+    if not os.path.exists(config.标识符路径):
+        os.makedirs(config.标识符路径)
+
+    # 2. 自动检测序号，避免文件名冲突
+    序号 = 0
+    while True:
+        图片名称 = f"img_{序号}.png"
+        全路径 = os.path.join(config.标识符路径, 图片名称)
+        if not os.path.exists(全路径):
+            break
+        序号 += 1
+
+    # 3. 🎲 自动随机生成一个唯一的章节名
+    随机四位数字 = random.randint(1000, 9999)
+    随机章节名 = f"随机章节-{随机四位数字}-img_{序号}"
+
+    # 4. 写入图片到硬盘（兼容中文路径）
+    try:
+        _, img_encode = cv2.imencode('.png', img)
+        with open(全路径, 'wb') as f:
+            f.write(img_encode.tobytes())
+        print(f"💾 局部截图已保存 -> {全路径}")
+    except Exception as e:
+        print(f"❌ 图片写入硬盘失败: {e}")
+        return
+
+    # 6. 🚀【核心：直接往 config.py 源码里追加写入新黑名单数据】实现长期记忆
+    # 构造一行标准的 Python 字典追加代码
+    code_line = f'\n章节黑名单["{随机章节名}"] = os.path.join(项目根目录路径, "ziyuanwenjian", "biaoshi", "{图片名称}")\n'
+
+    try:
+        # 使用 'a' 模式（追加模式），直接在 config.py 的文件末尾塞入这行代码
+        with open(config.配置文件路径, 'a', encoding='utf-8') as f:
+            f.write(code_line)
+        print(f"🔮 [长期记忆] 成功将黑名单代码刻入 config.py 源码！")
+    except Exception as e:
+        print(f"❌ 写入 config.py 失败: {e}")
 def 路径向导(relative_path):
     """
     自动补全目录深度，并统一路径格式
@@ -1267,4 +1336,8 @@ def 路径向导(relative_path):
 
 
 if __name__ == '__main__':
-    战斗退出()
+    img=截图()
+    黑名单更新(img)
+    importlib.reload(config)
+    import config
+    print(config.章节黑名单)
