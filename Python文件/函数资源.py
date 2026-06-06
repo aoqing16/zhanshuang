@@ -582,6 +582,7 @@ def 寻路检测():
     寻敌检测结果=寻敌检测主函数()
     if 寻敌检测结果:
         寻敌次数+=1
+
         寻敌()
         print('执行寻敌操作')
         print('寻敌次数加1')
@@ -592,13 +593,13 @@ def 寻路检测():
         print('寻敌无效，执行寻路中……')
         print('执行寻路操作,重置寻敌次数')
         寻敌次数=0
-        共享变量.寻路执行中=True
-        寻路操作()
+        with 共享变量.寻路和战斗锁:
+            寻路操作()
         print('寻路操作执行完毕,正在初始化变量')
-        共享变量.寻路执行中=False
 
 def 寻敌子线程():
     print('子线程运行中')
+    共享变量.寻路和战斗锁= threading.Lock()
     while True:
         while not 共享变量.停止寻敌信号:
             print('寻敌寻路中')
@@ -1303,56 +1304,56 @@ def 战斗主函数():
             共享变量.超时信号 = True
             print('副本已超时，正在执行退出')
             break
-        if 共享变量.寻路执行中:
-            continue
-        img = 截图()
-        try:
-            # 1. 优先级最高：闪避检测
-            n = 战斗标识检测(img)
+        with 共享变量.寻路和战斗锁:
+            img = 截图()
+            try:
+                # 1. 优先级最高：闪避检测
+                n = 战斗标识检测(img)
 
-            print(f'战斗标识物持续未出现次数{empty_count}')
-            if n is None:
-                empty_count += 1
-                if empty_count >= 12:
-                    print('退出战斗循环')
-                    break
-            else:
-                print('存在标志物')
-                empty_count = 0
+                print(f'战斗标识物持续未出现次数{empty_count}')
+                if n is None:
+                    empty_count += 1
+                    if empty_count >= 12:
+                        print('退出战斗循环')
+                        break
+                else:
+                    print('存在标志物')
+                    empty_count = 0
 
-            if 闪避检测(img) == 1:
-                print("触发闪避")
-                闪避()
-                time.sleep(0.5)  # 闪避后给予短暂空隙，防止连点
-                continue  # 跳过本次循环剩余部分，重新检测
+                if 闪避检测(img) == 1:
+                    print("触发闪避")
+                    闪避()
+                    time.sleep(0.5)  # 闪避后给予短暂空隙，防止连点
+                    continue  # 跳过本次循环剩余部分，重新检测
 
-            # 2. 优先级次之：必杀检测
-            if 必杀检测(img) == 1:
-                print("触发必杀")
-                必杀()
-                time.sleep(1.0)  # 必杀动画时间
-                continue
+                # 2. 优先级次之：必杀检测
+                if 必杀检测(img) == 1:
+                    print("触发必杀")
+                    必杀()
+                    time.sleep(1.0)  # 必杀动画时间
+                    continue
 
-            # 3. 优先级第三：消球检测
-            # 注意：这里需要根据你的消球逻辑处理返回值
-            球颜色 = 消球检测(img)
-            if 球颜色 is not None:
-                print(f"触发消球: {球颜色}")
-                消球()
-                time.sleep(0.3)
-                continue
+                # 3. 优先级第三：消球检测
+                # 注意：这里需要根据你的消球逻辑处理返回值
+                球颜色 = 消球检测(img)
+                if 球颜色 is not None:
+                    print(f"触发消球: {球颜色}")
+                    消球()
+                    time.sleep(0.3)
+                    continue
 
-            # 4. 最低优先级：普攻 (如果上面都没触发，则执行普攻)
-            普攻()
-            # print('普攻')
-            # 控制全局节奏，防止操作过快导致卡顿
-            time.sleep(0.1)
-            # end_time = time.perf_counter()
-            # elapsed_time = end_time - start_time
-            # print(f'循环一次耗时：【{elapsed_time}】')
-        except Exception as e:
-            print(f"战斗发生异常: {e}")
-            time.sleep(1)
+                # 4. 最低优先级：普攻 (如果上面都没触发，则执行普攻)
+                普攻()
+                print('普攻')
+                # 控制全局节奏，防止操作过快导致卡顿
+                time.sleep(0.1)
+                # end_time = time.perf_counter()
+                # elapsed_time = end_time - start_time
+                # print(f'循环一次耗时：【{elapsed_time}】')
+            except Exception as e:
+                print(f"战斗发生异常: {e}")
+                time.sleep(1)
+        time.sleep(0.05)
     print('退出战斗循环，正在结束子线程')
     共享变量.停止寻敌信号 = True
     print("🎉 子线程已经彻底凉透，主线程可以安心继续推进了。")
@@ -1429,4 +1430,4 @@ def 路径向导(relative_path):
 
 
 if __name__ == '__main__':
-    寻敌子线程()
+    寻路操作()
