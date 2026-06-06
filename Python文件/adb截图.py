@@ -87,6 +87,6 @@ def 监听按键截图():
     except KeyboardInterrupt:
         keyboard.unhook_all()
 if __name__ == '__main__':
-    监听按键截图()
+    单次截屏并保存()
     # keyboard.add_hotkey('space', 截图触发逻辑)
     # pass

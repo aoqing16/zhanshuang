@@ -16,7 +16,9 @@ def 副本首页():
             else:
                 clink = 坐标随机(m, left=30, right=30, up=30, down=30)
                 print(f'副本首页点击坐标{clink}')
+                start_time=time.time()
                 adb_click(clink)
+                print(f'adb点击耗时为：{time.time() - start_time}')
                 break
         else:#滑动三次后仍未发现新关卡，执行退出副本首页
             图像随机位置点击(路径向导('ziyuanwenjian/UI/img_10.png'))
@@ -80,3 +82,4 @@ def 副本战斗对话页():
 if __name__ == '__main__':
     # while True:
     副本首页()
+    print('退出副本首页函数')

@@ -18,8 +18,7 @@ model_1 = YOLO(r"C:\Users\ZhuanZ1\runs\classify\train-8\weights\best.pt")#分类
 
 # 1. 连接设备
 d = u2.connect('127.0.0.1:16384')
-
-
+# 💡 直接改对象的属性，底层会自动映射到 settings['post_delay']
 def 截图():
     img = d.screenshot(format='opencv')
     return img
@@ -159,7 +158,7 @@ def 图像存在判断(img,img_name, threshold=0.8, ):
 def 图像随机位置点击(img_name, threshold=0.8, padding=0):
     """
     匹配模板并在匹配区域内返回一个随机坐标
-    :param img_name: 模板图片文件名
+    :param img_name: 模板图片相对路径ziyuanwenjian/biaoshi/img_24.png
     :param threshold: 匹配阈值
     :param padding: 内缩量，防止点到边缘（默认5像素）
     :return: (rand_x, rand_y) 或 None
@@ -218,8 +217,16 @@ def adb_click(coord):
         return
 
 
-import random
-import time
+def adb_click测试(coord):
+    if coord:
+        x, y = coord
+
+        # 🟩 用这个代替 d.click(x, y)
+        # 点完的耗时将直接从 10 秒暴跌到 0.005 秒左右！
+        d.shell(f"input tap {x} {y}")
+
+    else:
+        return
 
 
 def 区域内随机坐标点击(x1, x2, y1, y2):
@@ -630,6 +637,7 @@ def 战斗场景检测():
     battle_hsv_min = np.array([0, 0, 244])  # 根据你的实际场景设置
     battle_hsv_max = np.array([179, 8, 255])
     战斗场景检测=hsv模板匹配(r'C:\Users\ZhuanZ1\Desktop\rpa\zhanshuangfuben\ziyuanwenjian\biaoshi\img_18.png',battle_hsv_min,battle_hsv_max)
+    print(f'战斗场景检测{战斗场景检测}')
     if 战斗场景检测:
         return True
     else:
@@ -1168,7 +1176,14 @@ def 闪避检测(image):
         return 1
     return 0
 
-
+def 战斗退出():
+    区域内随机坐标点击(2390,2490,55,141)
+    time.sleep(1)
+    图像随机位置点击('ziyuanwenjian/biaoshi/img_23.png')
+    time.sleep(0.8)
+    图像随机位置点击('ziyuanwenjian/biaoshi/img_24.png')
+    time.sleep(1)
+    区域内随机坐标点击(607,1955,494,1220)
 def 战斗主函数():
     empty_count = 0
     while True:
@@ -1252,6 +1267,4 @@ def 路径向导(relative_path):
 
 
 if __name__ == '__main__':
-    img = 截图()
-    n = yolo检测(img)
-    m = 获取最右侧未通关关卡调试版(img, n)
+    战斗退出()

@@ -11,6 +11,7 @@ def yolo页面检测子线程():
         result = yolo页面检测主函数()
         with data_lock:
             共享变量.latest_result = result
+            print(f'更新页面检测结果：{共享变量.latest_result}')
 
         time.sleep(0.1)  # 适当休息，避免识别线程跑得太快把CPU吃满
 def 截图子线程():
@@ -27,6 +28,7 @@ def 页面匹配():
             线程初始化+=1
         战斗主函数()
         ui变化检测(['战斗加载页'])
+        print('战斗函数已退出')
     # page_name=页面识别灰度模式()
     print(共享变量.latest_result)
 
@@ -70,5 +72,8 @@ if __name__ == '__main__':
     t.start()
 
     time.sleep(3)
+    nn=0
     while True:
         页面匹配()
+        nn+=1
+        print(f'页面匹配第{nn}循环')
