@@ -568,13 +568,41 @@ def 寻敌操作函数():
         print('执行寻敌操作')
         寻敌()
         time.sleep(5)
-# 共享变量.停止寻敌信号= False
+def 寻路操作():
+    print("  -> 摇杆前推...")
+    d.touch.down(371, 1062)
+    time.sleep(0.05)
+    d.touch.move(371, 848)
+    time.sleep(8)
+    d.touch.up(371, 848)
+寻敌次数=0
+def 寻路检测():
+    global 寻敌次数
+
+    寻敌检测结果=寻敌检测主函数()
+    if 寻敌检测结果:
+        寻敌次数+=1
+        寻敌()
+        print('执行寻敌操作')
+        print('寻敌次数加1')
+    # elif 寻敌检测结果 is False:
+    #     print('不需要寻敌，重置寻敌次数')
+    #     寻敌次数 = 0
+    if 寻敌次数>=8:
+        print('寻敌无效，执行寻路中……')
+        print('执行寻路操作,重置寻敌次数')
+        寻敌次数=0
+        共享变量.寻路执行中=True
+        寻路操作()
+        print('寻路操作执行完毕,正在初始化变量')
+        共享变量.寻路执行中=False
+
 def 寻敌子线程():
     print('子线程运行中')
     while True:
         while not 共享变量.停止寻敌信号:
-            print('寻敌中')
-            寻敌操作函数()
+            print('寻敌寻路中')
+            寻路检测()
         time.sleep(0.5)
     print('寻敌子线程已结束')
 
@@ -1250,17 +1278,33 @@ def 战斗退出():
     图像随机位置点击('ziyuanwenjian/biaoshi/img_23.png')
     time.sleep(0.8)
     图像随机位置点击('ziyuanwenjian/biaoshi/img_24.png')
-    time.sleep(4)
-    区域内随机坐标点击(607,1955,494,1220)
+    time.sleep(3)
+    for _ in range(3):
+        if 图像是否存在从配置文件中获取文件路径('作战失败'):
+            break
+        else:
+            time.sleep(1)
+    for i in range(1,4):
+        print(f'作战失败标识符检测：第{i}次')
+        if 图像是否存在从配置文件中获取文件路径('作战失败'):
+            print(f'检测到作战失败标识符，正在执行点击')
+            区域内随机坐标点击(607, 1955, 494, 1220)
+            time.sleep(0.8)
+        else:
+            break
+        time.sleep(1)
+
 def 战斗主函数():
     empty_count = 0
     start_time_1 = time.time()
     print('开始战斗计时')
     while not 共享变量.超时信号:
-        if time.time() - start_time_1 > 5:
+        if time.time() - start_time_1 > 240:
             共享变量.超时信号 = True
             print('副本已超时，正在执行退出')
             break
+        if 共享变量.寻路执行中:
+            continue
         img = 截图()
         try:
             # 1. 优先级最高：闪避检测
@@ -1385,4 +1429,4 @@ def 路径向导(relative_path):
 
 
 if __name__ == '__main__':
-    print(图像是否存在从配置文件中获取文件路径('普通剧情'))
+    寻敌子线程()
