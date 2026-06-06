@@ -387,7 +387,7 @@ def yolo过滤器(result_tuple):
         return 0
 def yolo页面检测主函数():
     ll=yolo页面识别()
-    print(f'yolo模型识别结果：【{ll[0]}】    置信度：{ll[1]}')
+    # print(f'yolo模型识别结果：【{ll[0]}】    置信度：{ll[1]}')
     过滤结果=yolo过滤器(ll)
     return 过滤结果
 
@@ -599,7 +599,6 @@ def 寻路检测():
 
 def 寻敌子线程():
     print('子线程运行中')
-    共享变量.寻路和战斗锁= threading.Lock()
     while True:
         while not 共享变量.停止寻敌信号:
             print('寻敌寻路中')
@@ -1300,9 +1299,11 @@ def 战斗主函数():
     start_time_1 = time.time()
     print('开始战斗计时')
     while not 共享变量.超时信号:
-        if time.time() - start_time_1 > 240:
+        print(f'当前已运行时间:{time.time() - start_time_1}')
+        if time.time() - start_time_1 > 10:
             共享变量.超时信号 = True
             print('副本已超时，正在执行退出')
+            print('正在同步时间')
             break
         with 共享变量.寻路和战斗锁:
             img = 截图()
@@ -1361,6 +1362,7 @@ def 战斗主函数():
         print('副本超时，正在执行退出并更新黑名单')
         战斗退出()
         黑名单更新(共享变量.章节名截图)
+    print('已退出战斗主函数')
 
 
 def 黑名单更新(img):

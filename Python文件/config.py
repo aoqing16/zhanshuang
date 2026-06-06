@@ -25,4 +25,3 @@ import os
 血条hsv范围lower=[0,0,254]
 血条hsv范围upper=[179,1,255]
 血条roi=[802,86,1763,117]
-章节黑名单["随机章节-7575-img_33"] = os.path.join(项目根目录路径, "ziyuanwenjian", "biaoshi", "img_33.png")
