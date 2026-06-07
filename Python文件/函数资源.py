@@ -568,44 +568,146 @@ def 寻敌操作函数():
         print('执行寻敌操作')
         寻敌()
         time.sleep(5)
-def 寻路操作():
+def 前推摇杆(时长=8):
     print("  -> 摇杆前推...")
+
     d.touch.down(371, 1062)
     time.sleep(0.05)
     d.touch.move(371, 848)
-    time.sleep(8)
+    time.sleep(时长)
     d.touch.up(371, 848)
-
 屏幕中心x=1278
-def 寻路操作第二版():
+终点标识符检测结果全局=False
+def 终点标识符检测():
+    """
+    检测画面是否存在终点标识符，如果存在则会将视角对准，如果不存在则会转动视角
+    :return: 对准标识符时，返回Ture
+    """
+    global 终点标识符检测结果全局
     终点标识符检测结果 = hsv模板匹配获取坐标('终点标识符', config.终点标识符hsv范围lower, config.终点标识符hsv范围upper,
                                              0.4)
     连续性过滤 = 连续性检测(终点标识符检测结果, 1)
     if 连续性过滤:
         print(f'终点标识符坐标为：{连续性过滤}')
+        终点标识符检测结果全局=True
         target_x, target_y = 连续性过滤
 
         # 计算标识符偏离屏幕中心的距离
         偏差值 = target_x - 屏幕中心x
 
-        if 偏差值 > 300:
-            随机小幅度划屏('right')
+        if 偏差值 > 80:
+            随机小幅度划屏((1278,692),'right')
             print("➡️ 标识符偏右，控制摇杆往右前方推，或者向右微调视角")
             # 你的摇杆控制逻辑...
-        elif 偏差值 < -300:
-            随机小幅度划屏('left')
+        elif 偏差值 < -80:
+            随机小幅度划屏((1278, 692),'left')
             print("⬅️ 标识符偏左，控制摇杆往左前方推，或者向左微调视角")
             # 你的摇杆控制逻辑...
         else:
-            print("⬆️ 已经对准目标！无脑向前推满摇杆赶路")
-            寻路操作()
+            print("⬆️ 已经对准目标！返回True")
+            # 寻路操作()
+            return True
     elif 连续性过滤 is False:
         print('未检测到终点标识符，正在滑动视角')
-        随机小幅度划屏('left',100)
+        随机小幅度划屏((1278, 692),'left',100)
+
+def 寻路主函数():
+    global 终点标识符检测结果全局
+    """
+    重复检测画面，如果检测到标识符会执行移动，如果没有会重试，最大重试次数为20次
+    :return:
+    """
+    for i in range(1,21):
+        if 终点标识符检测():
+            防卡墙移动()
+            break
+    else:
+        防卡墙移动()
+    print('正在初始化终点标识符全局变量')
+    终点标识符检测结果全局=False
+def 卡墙时操作():
+    随机小幅度划屏((1278, 692), 'right', 200)
+    前推摇杆(1)
+    if 终点标识符检测结果全局:
+        print('正在二次校验标识符方向')
+        for i in range(1,21):
+            if 终点标识符检测():
+                print('已重新校验方向')
+                break
+        else:
+            print('已超过最大重试次数，仍未检测到标识符')
 
 
+
+def 防卡墙移动():
+    移动次数=0
+    最大重试次数=10
+    while 移动次数<=7 or 最大重试次数==0:
+        if 卡墙检测():
+            卡墙时操作()
+            print('已执行卡墙时操作')
+            最大重试次数-=1
+        else:
+            移动次数+=1
+    print('已退出移动')
+
+
+def 卡墙检测(x1=657, y1=190, x2=2158, y2=494, threshold_ratio=0.1):
+    """通过对比指定区域(x1, y1, x2, y2)内的像素流变，检测角色是否卡墙
+
+    :param x1: 裁剪区域左上角 X 坐标
+    :param y1: 裁剪区域左上角 Y 坐标
+    :param x2: 裁剪区域右下角 X 坐标
+    :param y2: 裁剪区域右下角 Y 坐标
+    :param check_duration: 两次截图的时间间隔（秒），通常 0.3 ~ 0.5 秒
+    :param threshold_ratio: 判定为“画面有在动”的最小变化像素比例（默认 1.5%）
+    :return: 卡墙返回 True，正常移动返回 False
+    """
+    # 1. 抓取第一帧画面
+    img1 = 截图()
+    if img1 is None:
+        return False
+
+    # 🌟 核心修改：利用 NumPy 切片直接裁剪出你指定的任意矩形区域
+    # 注意：NumPy 矩阵的切片顺序是 [行, 列]，即 [y1:y2, x1:x2]
+    crop1 = img1[y1:y2, x1:x2]
+    gray1 = cv2.cvtColor(crop1, cv2.COLOR_BGR2GRAY)
+
+    # 2. ⏳ 等待角色移动一小会儿
+    前推摇杆(时长=1)
+
+    # 3. 抓取第二帧画面并用相同的坐标裁剪
+    img2 = 截图()
+    if img2 is None:
+        return False
+
+    crop2 = img2[y1:y2, x1:x2]
+    gray2 = cv2.cvtColor(crop2, cv2.COLOR_BGR2GRAY)
+
+    # 4. 🧮 计算这两块指定区域的绝对差值
+    diff = cv2.absdiff(gray1, gray2)
+
+    # 5. 二值化处理（过滤细微的环境光影变化）
+    _, thresh = cv2.threshold(diff, 25, 255, cv2.THRESH_BINARY)
+
+    # 6. 统计该指定区域内发生改变的像素点数量
+    changed_pixels = cv2.countNonZero(thresh)
+    total_pixels = gray1.size  # 当前指定剪裁区域的总像素点数
+
+    # 计算变化比例
+    change_rate = changed_pixels / total_pixels
+
+    # 🔍 调试日志，方便你精准校准不同区域的动态阈值
+    print(f"DEBUG: 区域({x1},{y1})->({x2},{y2}) 流变比例: {change_rate * 100:.2f}%")
+
+    # 7. ⚖️ 判定
+    if change_rate < threshold_ratio:
+        print(f"🚨 [卡墙判定] 指定区域静态重合率过高！流变仅 {change_rate * 100:.2f}%，判定为卡墙！")
+        return True
+
+    return False
 寻敌次数=0
-def 寻路检测():
+def 寻路寻敌检测():
     global 寻敌次数
 
     寻敌检测结果=寻敌检测主函数()
@@ -623,7 +725,7 @@ def 寻路检测():
         print('执行寻路操作,重置寻敌次数')
         寻敌次数=0
         with 共享变量.寻路和战斗锁:
-            寻路操作()
+            前推摇杆()
         print('寻路操作执行完毕,正在初始化变量')
 
 def 寻敌子线程():
@@ -631,7 +733,7 @@ def 寻敌子线程():
     while True:
         while not 共享变量.停止寻敌信号:
             print('寻敌寻路中')
-            寻路检测()
+            寻路寻敌检测()
         time.sleep(0.5)
     print('寻敌子线程已结束')
 
@@ -1511,37 +1613,38 @@ def 路径向导(relative_path):
     return os.path.join(base_path, relative_path)
 
 
-def 随机小幅度划屏(direction, distance=40, duration=0.1):
+def 随机小幅度划屏(起止点,滑动方向, 滑动距离=40, 持续时间=0.1):
     """在屏幕中心随机区域内，执行指定方向的小幅度平滑滑动（适用于视角微调）
-
+    :param 起止点：坐标元组
     :param d: uiautomator2 的连接对象实例 (例如 d = u2.connect())
-    :param direction: 滑动方向，可选字符串: 'left' / 'right' / 'up' / 'down'
-    :param distance: 滑动的像素跨度，默认 80（对应你之前的 1040-960）
-    :param duration: 滑动动作持续时间（秒），默认 0.1 秒以保持平滑转视角
+    :param 滑动方向: 滑动方向，可选字符串: 'left' / 'right' / 'up' / 'down'
+    :param 滑动距离: 滑动的像素跨度，默认 80（对应你之前的 1040-960）
+    :param 持续时间: 滑动动作持续时间（秒），默认 0.1 秒以保持平滑转视角
     """
     # 1. 在屏幕中心 (960, 540) 附近生成一个随机起点，避免每次点位完全一致
     # 这样可以模拟真实手指按在屏幕上的微小位置差异
-    start_x = 1278 + random.randint(-100, 100)
-    start_y = 692 + random.randint(-100, 100)
+    x,y=起止点
+    start_x = x + random.randint(-30, 30)
+    start_y = y + random.randint(-15, 15)
 
     # 给滑动的像素距离也加一点点随机抖动，让轨迹更拟真
-    real_distance = distance + random.randint(-5, 5)
+    real_distance = 滑动距离 + random.randint(-5, 5)
 
     # 2. 根据方向计算对应的终点坐标
-    if direction == "left":
+    if 滑动方向 == "left":
         end_x = start_x - real_distance
         end_y = start_y + random.randint(-10, 10)  # Y轴允许有极微小的手抖偏差
-    elif direction == "right":
+    elif 滑动方向 == "right":
         end_x = start_x + real_distance
         end_y = start_y + random.randint(-10, 10)
-    elif direction == "up":
+    elif 滑动方向 == "up":
         end_x = start_x + random.randint(-10, 10)  # X轴允许有极微小的手抖偏差
         end_y = start_y - real_distance
-    elif direction == "down":
+    elif 滑动方向 == "down":
         end_x = start_x + random.randint(-10, 10)
         end_y = start_y + real_distance
     else:
-        print(f"❌ 错误：不支持的滑动方向 [{direction}]")
+        print(f"❌ 错误：不支持的滑动方向 [{滑动方向}]")
         return False
 
     # 3. 打印 DEBUG 日志，方便你在控制台观察视角控制是否频繁触发
@@ -1549,15 +1652,11 @@ def 随机小幅度划屏(direction, distance=40, duration=0.1):
 
     # 4. 调用 u2 执行物理滑动
     try:
-        d.swipe(start_x, start_y, end_x, end_y, duration=duration)
+        d.swipe(start_x, start_y, end_x, end_y, duration=持续时间)
         return True
     except Exception as e:
         print(f"⚠️ 滑动操作异常: {e}")
         return False
 
 if __name__ == '__main__':
-     while True:
-        # print('正在左滑')
-        # 随机小幅度划屏('left')
-        time.sleep(0.5)
-        寻路操作第二版()
+    寻路主函数()
