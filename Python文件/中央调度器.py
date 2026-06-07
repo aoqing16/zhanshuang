@@ -75,5 +75,3 @@ if __name__ == '__main__':
     # nn=0
     while True:
         页面匹配()
-        # nn+=1
-        # print(f'页面匹配第{nn}循环')

@@ -528,7 +528,7 @@ def 寻敌状态检测(状态参数):
 # ==========================================
 上一次结果 = None
 连续出现次数 = 0
-def 连续性检测(检测数据):
+def 连续性检测(检测数据,连续次数):
     """
     通用连续性防抖检测器
     :param 检测数据: 当前帧计算出来的单次状态 (True 或 False)
@@ -554,14 +554,14 @@ def 连续性检测(检测数据):
         return None  # 突变帧不可信，返回 None 重新观察
 
     # 4. 只有当连续次数达到 3 次时，才给主流程扔出最终裁决
-    if 连续出现次数 >= 25:
+    if 连续出现次数 >= 连续次数:
         连续出现次数 = 1
         return 上一次结果
 
     return None  # 刚满 2 次，还在通往 3 次的路上，返回 None
 
 def 寻敌检测主函数():
-    寻敌=连续性检测(寻敌状态检测(血条检测()))
+    寻敌=连续性检测(寻敌状态检测(血条检测()),25)
     return 寻敌
 def 寻敌操作函数():
     if 寻敌检测主函数():
@@ -575,9 +575,36 @@ def 寻路操作():
     d.touch.move(371, 848)
     time.sleep(8)
     d.touch.up(371, 848)
-寻敌次数=0
+
+屏幕中心x=1278
 def 寻路操作第二版():
-    hsv模板匹配('终点标识符',config.终点标识符hsv范围lower,config.终点标识符hsv范围upper,0.5)
+    终点标识符检测结果 = hsv模板匹配获取坐标('终点标识符', config.终点标识符hsv范围lower, config.终点标识符hsv范围upper,
+                                             0.4)
+    连续性过滤 = 连续性检测(终点标识符检测结果, 1)
+    if 连续性过滤:
+        print(f'终点标识符坐标为：{连续性过滤}')
+        target_x, target_y = 连续性过滤
+
+        # 计算标识符偏离屏幕中心的距离
+        偏差值 = target_x - 屏幕中心x
+
+        if 偏差值 > 300:
+            随机小幅度划屏('right')
+            print("➡️ 标识符偏右，控制摇杆往右前方推，或者向右微调视角")
+            # 你的摇杆控制逻辑...
+        elif 偏差值 < -300:
+            随机小幅度划屏('left')
+            print("⬅️ 标识符偏左，控制摇杆往左前方推，或者向左微调视角")
+            # 你的摇杆控制逻辑...
+        else:
+            print("⬆️ 已经对准目标！无脑向前推满摇杆赶路")
+            寻路操作()
+    elif 连续性过滤 is False:
+        print('未检测到终点标识符，正在滑动视角')
+        随机小幅度划屏('left',100)
+
+
+寻敌次数=0
 def 寻路检测():
     global 寻敌次数
 
@@ -693,16 +720,68 @@ LOADED_TEMPLATES = {
 }
 
 
+def hsv模板匹配获取坐标(key, hsv_lower, hsv_upper, threshold=0.85):
+    """
+    复合检测函数：先 HSV 掩膜过滤，再进行模板匹配
+    :param key: 模板图片键名
+    :param hsv_lower: HSV下限
+    :param hsv_upper: HSV上限
+    :param threshold: 匹配置信度阈值
+    :return: 匹配成功返回中心点坐标 (center_x, center_y), 否则返回 False
+    """
+    # 1. 加载模板
+    hsv_lower = np.array(hsv_lower)
+    hsv_upper = np.array(hsv_upper)
+    template = cv2.imread(config.图片标识符清单.get(key), cv2.IMREAD_COLOR)
+    if template is None:
+        print(f"警告：无法加载模板 {key}")
+        return False
+
+    # 🌟 获取原模板的宽度(w)和高度(h)，用于后续计算中心点
+    h, w = template.shape[:2]
+    template_gray = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
+
+    # 2. 获取实时画面
+    img = 截图()
+    if img is None:
+        return False
+
+    # 3. HSV 过滤
+    hsv_img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    mask = cv2.inRange(hsv_img, hsv_lower, hsv_upper)
+
+    # 4. 灰度处理与位运算（抠图）
+    img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    masked_img = cv2.bitwise_and(img_gray, img_gray, mask=mask)
+
+    # 5. 模板匹配
+    res = cv2.matchTemplate(masked_img, template_gray, cv2.TM_CCOEFF_NORMED)
+    # 🌟 将第四个参数 max_loc（匹配区域的左上角坐标）接住
+    _, max_val, _, max_loc = cv2.minMaxLoc(res)
+
+    # 打印日志以便调试
+    print(f"DEBUG: 匹配度 {max_val:.4f}")
+
+    # 6. 判断并返回中心坐标
+    if max_val >= threshold:
+        # 🌟 左上角 X, Y 坐标分别加上模板自身宽高的一半，得到几何中心点
+        center_x = int(max_loc[0] + w / 2)
+        center_y = int(max_loc[1] + h / 2)
+        return (center_x, center_y)
+
+    return False
 def hsv模板匹配(key, hsv_lower, hsv_upper, threshold=0.85):
     """
     复合检测函数：先 HSV 掩膜过滤，再进行模板匹配
-    :param template_path: 模板图片路径
-    :param hsv_lower: HSV下限 (np.array)
-    :param hsv_upper: HSV上限 (np.array)
+    :param key: 模板图片键名
+    :param hsv_lower: HSV下限
+    :param hsv_upper: HSV上限
     :param threshold: 匹配置信度阈值
     :return: 匹配成功返回 True, 否则返回 False
     """
     # 1. 加载模板
+    hsv_lower=np.array(hsv_lower)
+    hsv_upper=np.array(hsv_upper)
     template = cv2.imread(config.图片标识符清单.get(key), cv2.IMREAD_COLOR)
     if template is None:
         print(f"警告：无法加载模板 {key}")
@@ -732,9 +811,9 @@ def hsv模板匹配(key, hsv_lower, hsv_upper, threshold=0.85):
 
     return max_val >= threshold
 def 战斗场景检测():
-    battle_hsv_min = np.array([0, 0, 244])  # 根据你的实际场景设置
-    battle_hsv_max = np.array([179, 8, 255])
-    战斗场景检测=hsv模板匹配(r'C:\Users\ZhuanZ1\Desktop\rpa\zhanshuangfuben\ziyuanwenjian\biaoshi\img_18.png',battle_hsv_min,battle_hsv_max)
+    battle_hsv_min =[0, 0, 244] # 根据你的实际场景设置
+    battle_hsv_max =[179, 8, 255]
+    战斗场景检测=hsv模板匹配('战斗标识符',battle_hsv_min,battle_hsv_max)
     print(f'战斗场景检测{战斗场景检测}')
     if 战斗场景检测:
         return True
@@ -1432,6 +1511,53 @@ def 路径向导(relative_path):
     return os.path.join(base_path, relative_path)
 
 
+def 随机小幅度划屏(direction, distance=40, duration=0.1):
+    """在屏幕中心随机区域内，执行指定方向的小幅度平滑滑动（适用于视角微调）
+
+    :param d: uiautomator2 的连接对象实例 (例如 d = u2.connect())
+    :param direction: 滑动方向，可选字符串: 'left' / 'right' / 'up' / 'down'
+    :param distance: 滑动的像素跨度，默认 80（对应你之前的 1040-960）
+    :param duration: 滑动动作持续时间（秒），默认 0.1 秒以保持平滑转视角
+    """
+    # 1. 在屏幕中心 (960, 540) 附近生成一个随机起点，避免每次点位完全一致
+    # 这样可以模拟真实手指按在屏幕上的微小位置差异
+    start_x = 1278 + random.randint(-100, 100)
+    start_y = 692 + random.randint(-100, 100)
+
+    # 给滑动的像素距离也加一点点随机抖动，让轨迹更拟真
+    real_distance = distance + random.randint(-5, 5)
+
+    # 2. 根据方向计算对应的终点坐标
+    if direction == "left":
+        end_x = start_x - real_distance
+        end_y = start_y + random.randint(-10, 10)  # Y轴允许有极微小的手抖偏差
+    elif direction == "right":
+        end_x = start_x + real_distance
+        end_y = start_y + random.randint(-10, 10)
+    elif direction == "up":
+        end_x = start_x + random.randint(-10, 10)  # X轴允许有极微小的手抖偏差
+        end_y = start_y - real_distance
+    elif direction == "down":
+        end_x = start_x + random.randint(-10, 10)
+        end_y = start_y + real_distance
+    else:
+        print(f"❌ 错误：不支持的滑动方向 [{direction}]")
+        return False
+
+    # 3. 打印 DEBUG 日志，方便你在控制台观察视角控制是否频繁触发
+    # print(f"🔄 视角微调: 方向 [{direction}], 轨迹 ({start_x}, {start_y}) -> ({end_x}, {end_y}), 耗时: {duration}s")
+
+    # 4. 调用 u2 执行物理滑动
+    try:
+        d.swipe(start_x, start_y, end_x, end_y, duration=duration)
+        return True
+    except Exception as e:
+        print(f"⚠️ 滑动操作异常: {e}")
+        return False
 
 if __name__ == '__main__':
-    寻路操作()
+     while True:
+        # print('正在左滑')
+        # 随机小幅度划屏('left')
+        time.sleep(0.5)
+        寻路操作第二版()

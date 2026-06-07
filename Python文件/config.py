@@ -12,6 +12,7 @@ import os
     "隐藏剧情按钮":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_27.png'),
     "作战失败":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_30.png'),
     "终点标识符":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_31.png'),
+    "战斗标识符":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_18.png'),
 }
 章节标签黑名单 = {
     "升格": os.path.join(项目根目录路径, "ziyuanwenjian",'biaoshi','img_21.png'),
