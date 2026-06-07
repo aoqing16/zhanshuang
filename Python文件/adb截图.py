@@ -92,6 +92,6 @@ def 监听按键截图():
     except KeyboardInterrupt:
         keyboard.unhook_all()
 if __name__ == '__main__':
-    hsv过滤截图()
+    监听按键截图()
     # keyboard.add_hotkey('space', 截图触发逻辑)
     # pass

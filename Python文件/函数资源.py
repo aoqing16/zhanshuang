@@ -12,7 +12,7 @@ import config
 import importlib
 print('模型加载中')
 model = YOLO(r'C:\Users\ZhuanZ1\runs\detect\train-8\weights\best.pt')#目标检测模型
-model_1 = YOLO(r"C:\Users\ZhuanZ1\runs\classify\train-8\weights\best.pt")#分类模型
+model_1 = YOLO(r"C:\Users\ZhuanZ1\runs\classify\train-9\weights\best.pt")#分类模型
 # from Python文件.中央调度器 import 页面识别
 
 # 1. 连接设备
@@ -650,7 +650,7 @@ def 卡墙时操作():
     随机小幅度划屏((1278, 692), 'right', 200)
     前推摇杆(1)
     if 终点标识符检测结果全局:
-        print('正在二次校验标识符方向')
+        print('卡墙，正在二次校验标识符方向')
         for i in range(1,21):
             if 终点标识符检测():
                 print('已重新校验方向')
@@ -676,6 +676,12 @@ def 防卡墙移动():
             print('已执行卡墙时操作')
             最大重试次数-=1
         else:
+            if 终点标识符检测结果全局:
+                print('非卡墙，正在二次校验标识符方向')
+                for i in range(1, 21):
+                    if 终点标识符检测():
+                        print('已重新校验方向')
+                        break
             移动次数+=1
     print('已退出移动')
 
@@ -753,7 +759,7 @@ def 寻路寻敌检测():
         print('执行寻路操作,重置寻敌次数')
         寻敌次数=0
         with 共享变量.寻路和战斗锁:
-            前推摇杆()
+            寻路主函数()
         print('寻路操作执行完毕,正在初始化变量')
 
 def 寻敌子线程():
@@ -1490,12 +1496,12 @@ def 战斗退出():
     time.sleep(0.8)
     图像随机位置点击('ziyuanwenjian/biaoshi/img_24.png')
     time.sleep(3)
-    for _ in range(3):
+    for _ in range(3):#等待作战失败文字出现
         if 图像是否存在从配置文件中获取文件路径('作战失败'):
             break
         else:
             time.sleep(1)
-    for i in range(1,4):
+    for i in range(1,4):#循环点击，直至作战失败消失
         print(f'作战失败标识符检测：第{i}次')
         if 图像是否存在从配置文件中获取文件路径('作战失败'):
             print(f'检测到作战失败标识符，正在执行点击')
@@ -1511,7 +1517,7 @@ def 战斗主函数():
     print('开始战斗计时')
     while not 共享变量.超时信号:
         print(f'当前已运行时间:{time.time() - start_time_1}')
-        if time.time() - start_time_1 > 10:
+        if time.time() - start_time_1 > 240:
             共享变量.超时信号 = True
             print('副本已超时，正在执行退出')
             print('正在同步时间')

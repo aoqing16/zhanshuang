@@ -14,6 +14,7 @@ import os
     "终点标识符":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_31.png'),
     "战斗标识符":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_18.png'),
     "副本-战斗对话页":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_32.png'),
+    "副本-意识重启":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_34.png'),
 
 }
 章节标签黑名单 = {
@@ -33,3 +34,5 @@ import os
 血条roi=[802,86,1763,117]
 副本_战斗对话页hsv范围lower=[0,0,255]
 副本_战斗对话页hsv范围upper=[179,3,255]
+
+章节黑名单["随机章节-3174-img_33"] = os.path.join(项目根目录路径, "ziyuanwenjian", "biaoshi", "img_33.png")
