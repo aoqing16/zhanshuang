@@ -511,7 +511,7 @@ def 寻敌状态检测(状态参数):
     # 计算绝对变化幅度（拿当前值和上一次记录的值做减法）
     变化幅度 = abs(当前像素值 - _上次的像素值)
 
-    # print(f"📊 [变化率雷达] 当前像素:{当前像素值} | 上次像素:{_上次的像素值} | 差值:{变化幅度}")
+    print(f"📊 [变化率雷达] 当前像素:{当前像素值} | 上次像素:{_上次的像素值} | 差值:{变化幅度}")
 
     # 💡 核心校验：把当前值覆盖存入记忆，供下一次循环对比
     _上次的像素值 = 当前像素值
@@ -542,7 +542,7 @@ def 连续性检测(检测数据,连续次数):
     if 上一次结果 is None:
         上一次结果 = 检测数据
         连续出现次数 = 1
-        print('上一次结果为空，返回空')
+        # print('上一次结果为空，返回空')
         return None  # 第一帧作为基准，继续观察
 
     # 2. 如果当前数据与上一次完全相同，计数器累加
@@ -552,14 +552,14 @@ def 连续性检测(检测数据,连续次数):
         # 3. 💡 突变发生！一旦不同，说明状态不稳定，立刻重置基准和计数
         上一次结果 = 检测数据
         连续出现次数 = 1
-        print('与上一次结果不同，返回空')
+        # print('与上一次结果不同，返回空')
         return None  # 突变帧不可信，返回 None 重新观察
 
     # 4. 只有当连续次数达到 3 次时，才给主流程扔出最终裁决
     if 连续出现次数 >= 连续次数:
         连续出现次数 = 1
         return 上一次结果
-    print('最后的空')
+    # print('最后的空')
     return None  # 刚满 2 次，还在通往 3 次的路上，返回 None
 
 def 寻敌检测主函数():
@@ -578,6 +578,29 @@ def 前推摇杆(时长=8):
     d.touch.move(371, 848)
     time.sleep(时长)
     d.touch.up(371, 848)
+def 非阻塞式前移摇杆(最大时长=1):
+    d.touch.down(371, 1062)
+    time.sleep(0.05)
+    d.touch.move(371, 848)
+    start_time=time.time()
+    print('一开始移动，开始计时')
+    try:
+        while time.time()-start_time<最大时长:
+            if hsv模板匹配('副本-战斗对话页', config.副本_战斗对话页hsv范围lower, config.副本_战斗对话页hsv范围upper):
+                区域内随机坐标点击(1567, 1721, 1200, 1247)
+                time.sleep(0.1)
+                区域内随机坐标点击(2206, 2312, 1071, 1183)
+                print('检测到触发战斗对话页，寻路结束')
+                break
+            if hsv模板匹配('副本-战斗交互', config.副本_战斗交互hsv范围lower, config.副本_战斗交互hsv范围upper):
+                print('检测到交互按钮，默认已实现寻路效果')
+                区域内随机坐标点击(2294, 2418, 966, 1086)
+                time.sleep(1.5)
+                break
+            time.sleep(0.01)
+    finally:
+        d.touch.up(371, 848)
+
 屏幕中心x=1278
 终点标识符检测结果全局=False
 防遮挡 = 0
@@ -639,6 +662,11 @@ def 寻路主函数():
             区域内随机坐标点击(2206, 2312, 1071, 1183)
             print('检测到触发战斗对话页，寻路结束')
             break
+        if hsv模板匹配('副本-战斗交互',config.副本_战斗交互hsv范围lower,config.副本_战斗交互hsv范围upper):
+            print('检测到交互按钮，默认已实现寻路效果')
+            区域内随机坐标点击(2294,2418,966,1086)
+            time.sleep(1.5)
+            break
         if 终点标识符检测():
             防卡墙移动()
             break
@@ -648,7 +676,7 @@ def 寻路主函数():
     终点标识符检测结果全局=False
 def 卡墙时操作():
     随机小幅度划屏((1278, 692), 'right', 200)
-    前推摇杆(1)
+    非阻塞式前移摇杆(1)
     if 终点标识符检测结果全局:
         print('卡墙，正在二次校验标识符方向')
         for i in range(1,21):
@@ -670,6 +698,11 @@ def 防卡墙移动():
             区域内随机坐标点击(2206, 2312, 1071, 1183)
             print('检测到触发战斗对话页，寻路结束')
 
+            break
+        if hsv模板匹配('副本-战斗交互', config.副本_战斗交互hsv范围lower, config.副本_战斗交互hsv范围upper):
+            print('检测到交互按钮，默认已实现寻路效果')
+            区域内随机坐标点击(2294, 2418, 966, 1086)
+            time.sleep(1.5)
             break
         if 卡墙检测():
             卡墙时操作()
@@ -708,7 +741,7 @@ def 卡墙检测(x1=657, y1=190, x2=2158, y2=494, threshold_ratio=0.1):
     gray1 = cv2.cvtColor(crop1, cv2.COLOR_BGR2GRAY)
 
     # 2. ⏳ 等待角色移动一小会儿
-    前推摇杆(时长=1)
+    非阻塞式前移摇杆(1)
 
     # 3. 抓取第二帧画面并用相同的坐标裁剪
     img2 = 截图()
@@ -896,7 +929,7 @@ def hsv模板匹配获取坐标(key, hsv_lower, hsv_upper, threshold=0.85):
     _, max_val, _, max_loc = cv2.minMaxLoc(res)
 
     # 打印日志以便调试
-    print(f"DEBUG: 匹配度 {max_val:.4f}")
+    # print(f"DEBUG: 匹配度 {max_val:.4f}")
 
     # 6. 判断并返回中心坐标
     if max_val >= threshold:
@@ -1400,8 +1433,6 @@ def 寻敌():
     adb_click(xy)
 def 消球检测(img):
     BALL_COLORS = {
-        # "红黄": {"lower": np.array([0, 165, 175]), "upper": np.array([179, 191, 236])},
-        # "蓝色": {"lower": np.array([107, 92, 144]), "upper": np.array([119, 203, 232])},
         "红黄蓝": {"lower": np.array([0, 0, 210]), "upper": np.array([179, 38, 255])}
     }
     dict_a = [(2447, 1013), (2228, 1013)]
@@ -1410,7 +1441,7 @@ def 消球检测(img):
     hsv_img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     for index, (pt_x, pt_y) in enumerate(dict_a):
         # 截取采样区域 (±65像素)
-        sample = hsv_img[pt_y - 20:pt_y + 20, pt_x - 20:pt_x + 20]
+        sample = hsv_img[pt_y - 50:pt_y + 50, pt_x - 50:pt_x + 50]
 
         # 对该区域遍历每种颜色配置
         for name, bounds in BALL_COLORS.items():
@@ -1693,4 +1724,4 @@ def 随机小幅度划屏(起止点,滑动方向, 滑动距离=40, 持续时间=
         return False
 
 if __name__ == '__main__':
-    寻路主函数()
+    非阻塞式前移摇杆()

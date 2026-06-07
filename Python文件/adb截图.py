@@ -22,8 +22,8 @@ def hsv过滤截图():
     img = 截图()
 
     # 2. 定义 HSV 范围 (示例，请根据实际调试结果调整)
-    hsv_lower = np.array([0, 0, 255])
-    hsv_upper = np.array([179, 3, 255])
+    hsv_lower = np.array([0, 0, 165])
+    hsv_upper = np.array([51, 6, 234])
 
     # 3. 进行 HSV 过滤
     # 转换到 HSV 色彩空间
@@ -92,6 +92,6 @@ def 监听按键截图():
     except KeyboardInterrupt:
         keyboard.unhook_all()
 if __name__ == '__main__':
-    监听按键截图()
+    hsv过滤截图()
     # keyboard.add_hotkey('space', 截图触发逻辑)
     # pass

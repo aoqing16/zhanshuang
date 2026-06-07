@@ -84,6 +84,7 @@ def 编入队伍():
 def 副本对话页():
     zuobiao = 图像坐标获取灰度模式(路径向导('ziyuanwenjian/UI/img_4.png'))
     print(f'副本对话页标识坐标{zuobiao}')
+    time.sleep(0.7)
     n = 坐标随机(zuobiao, left=-375, right=615, up=25, down=25)
     adb_click(n)
 def 剧情跳过提示():
