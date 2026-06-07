@@ -11,6 +11,7 @@ import os
     "普通剧情按钮":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_25.png'),
     "隐藏剧情按钮":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_27.png'),
     "作战失败":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_30.png'),
+    "终点标识符":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_31.png'),
 }
 章节标签黑名单 = {
     "升格": os.path.join(项目根目录路径, "ziyuanwenjian",'biaoshi','img_21.png'),
@@ -22,6 +23,8 @@ import os
 }
 章节roi = [556, 956, 1943, 1158]
 # print(章节标签黑名单)
+终点标识符hsv范围lower=[126,8,206]
+终点标识符hsv范围upper=[179,39,255]
 血条hsv范围lower=[0,0,254]
 血条hsv范围upper=[179,1,255]
 血条roi=[802,86,1763,117]

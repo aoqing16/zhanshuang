@@ -576,6 +576,8 @@ def 寻路操作():
     time.sleep(8)
     d.touch.up(371, 848)
 寻敌次数=0
+def 寻路操作第二版():
+    hsv模板匹配('终点标识符',config.终点标识符hsv范围lower,config.终点标识符hsv范围upper,0.5)
 def 寻路检测():
     global 寻敌次数
 
@@ -633,7 +635,7 @@ def 页面识别(threshold=0.8):
             detected_names.append(name)
 
     return detected_names
-def ui变化检测(标识符,timeout=3.5,interval=0.1):
+def ui变化检测(标识符,timeout=5,interval=0.1):
     start_time = time.time()
     while time.time() - start_time < timeout:
         if 共享变量.latest_result!=标识符:
@@ -691,7 +693,7 @@ LOADED_TEMPLATES = {
 }
 
 
-def hsv模板匹配(template_path, hsv_lower, hsv_upper, threshold=0.85):
+def hsv模板匹配(key, hsv_lower, hsv_upper, threshold=0.85):
     """
     复合检测函数：先 HSV 掩膜过滤，再进行模板匹配
     :param template_path: 模板图片路径
@@ -701,9 +703,9 @@ def hsv模板匹配(template_path, hsv_lower, hsv_upper, threshold=0.85):
     :return: 匹配成功返回 True, 否则返回 False
     """
     # 1. 加载模板
-    template = cv2.imread(template_path, cv2.IMREAD_COLOR)
+    template = cv2.imread(config.图片标识符清单.get(key), cv2.IMREAD_COLOR)
     if template is None:
-        print(f"警告：无法加载模板 {template_path}")
+        print(f"警告：无法加载模板 {key}")
         return False
 
     template_gray = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
@@ -726,7 +728,7 @@ def hsv模板匹配(template_path, hsv_lower, hsv_upper, threshold=0.85):
     _, max_val, _, _ = cv2.minMaxLoc(res)
 
     # 打印日志以便调试
-    # print(f"DEBUG: 匹配度 {max_val:.4f}")
+    print(f"DEBUG: 匹配度 {max_val:.4f}")
 
     return max_val >= threshold
 def 战斗场景检测():
