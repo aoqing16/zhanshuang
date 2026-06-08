@@ -55,7 +55,7 @@ def hsv实时预览():
 
 def hsv过滤():
     # 1. 读取图片
-    img_path = r"adbxi.png"  # 请确保图片文件路径正确
+    img_path = r"C:\Users\ZhuanZ1\Desktop\rpa\dataset\yolo图像分类模型数据集\train\副本-意识重启\20260607_175209_d604aa - 副本.png"  # 请确保图片文件路径正确
     image = cv2.imread(img_path)
     # image=截图()
     if image is None:
@@ -115,4 +115,4 @@ def hsv过滤():
 
     cv2.destroyAllWindows()
 if __name__ == '__main__':
-    hsv实时预览()
+    hsv过滤()

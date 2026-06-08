@@ -37,8 +37,5 @@ import os
 副本_战斗对话页hsv范围upper=[179,3,255]
 副本_战斗交互hsv范围lower=[0,0,165]
 副本_战斗交互hsv范围upper=[51,6,234]
-章节黑名单["随机章节-3174-img_33"] = os.path.join(项目根目录路径, "ziyuanwenjian", "biaoshi", "img_33.png")
 
-章节黑名单["随机章节-6930-img_35"] = os.path.join(项目根目录路径, "ziyuanwenjian", "biaoshi", "img_35.png")
-
-章节黑名单["随机章节-4687-img_36"] = os.path.join(项目根目录路径, "ziyuanwenjian", "biaoshi", "img_36.png")
+章节黑名单["随机章节-9698-img_38"] = os.path.join(项目根目录路径, "ziyuanwenjian", "biaoshi", "img_38.png")

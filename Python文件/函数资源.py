@@ -583,7 +583,7 @@ def 非阻塞式前移摇杆(最大时长=1):
     time.sleep(0.05)
     d.touch.move(371, 848)
     start_time=time.time()
-    print('一开始移动，开始计时')
+    print('已开始移动，开始计时')
     try:
         while time.time()-start_time<最大时长:
             if hsv模板匹配('副本-战斗对话页', config.副本_战斗对话页hsv范围lower, config.副本_战斗对话页hsv范围upper):
@@ -597,7 +597,6 @@ def 非阻塞式前移摇杆(最大时长=1):
                 区域内随机坐标点击(2294, 2418, 966, 1086)
                 time.sleep(1.5)
                 break
-            time.sleep(0.01)
     finally:
         d.touch.up(371, 848)
 
@@ -691,7 +690,7 @@ def 卡墙时操作():
 def 防卡墙移动():
     移动次数=0
     最大重试次数=10
-    while 移动次数<=7 or 最大重试次数==0:
+    while 移动次数<=7 and 最大重试次数>0:
         if hsv模板匹配('副本-战斗对话页',config.副本_战斗对话页hsv范围lower,config.副本_战斗对话页hsv范围upper):
             区域内随机坐标点击(1567, 1721, 1200, 1247)
             time.sleep(0.1)
@@ -787,7 +786,7 @@ def 寻路寻敌检测():
     # elif 寻敌检测结果 is False:
     #     print('不需要寻敌，重置寻敌次数')
     #     寻敌次数 = 0
-    if 寻敌次数>=8:
+    if 寻敌次数>=5:
         print('寻敌无效，执行寻路中……')
         print('执行寻路操作,重置寻敌次数')
         寻敌次数=0
@@ -1724,4 +1723,4 @@ def 随机小幅度划屏(起止点,滑动方向, 滑动距离=40, 持续时间=
         return False
 
 if __name__ == '__main__':
-    非阻塞式前移摇杆()
+    寻路主函数()
