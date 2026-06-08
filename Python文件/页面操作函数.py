@@ -87,11 +87,13 @@ def 上阵英雄():
 def 编入队伍():
     图像随机位置点击(路径向导('ziyuanwenjian/UI/img_9.png'))
 def 副本对话页():
-    zuobiao = 图像坐标获取灰度模式(路径向导('ziyuanwenjian/UI/img_4.png'))
-    print(f'副本对话页标识坐标{zuobiao}')
-    time.sleep(0.7)
-    n = 坐标随机(zuobiao, left=-375, right=615, up=25, down=25)
-    adb_click(n)
+    # zuobiao = 图像坐标获取灰度模式(路径向导('ziyuanwenjian/UI/img_4.png'))
+    # print(f'副本对话页标识坐标{zuobiao}')
+    # time.sleep(0.7)
+    # n = 坐标随机(zuobiao, left=-375, right=615, up=25, down=25)
+    # adb_click(n)
+    区域内随机坐标点击(2237,2480,54,112)
+    time.sleep(0.1)
 def 剧情跳过提示():
     图像随机位置点击(路径向导('ziyuanwenjian/UI/img_5.png'))
 def 战后结算():
@@ -123,4 +125,4 @@ def 副本_意识重启():
     黑名单更新(共享变量.章节名截图)
 if __name__ == '__main__':
     # while True:
-    副本首页()
+    副本对话页()
