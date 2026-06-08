@@ -584,6 +584,7 @@ def 非阻塞式前移摇杆(最大时长=1):
                 区域内随机坐标点击(2294, 2418, 966, 1086)
                 time.sleep(1.5)
                 break
+            time.sleep(0.005)
     finally:
         d.touch.up(371, 848)
 
@@ -663,7 +664,7 @@ def 寻路主函数():
             print('检测到意识重启页，正在退出寻路')
             break
         bool,血条像素值=血条检测()
-        if bool():
+        if bool:
             print('检测到血条，正在退出寻路')
             break
         if 终点标识符检测():
@@ -714,7 +715,7 @@ def 防卡墙移动():
             print('检测到意识重启页，正在退出寻路')
             break
         bool, 血条像素值 = 血条检测()
-        if bool():
+        if bool:
             print('检测到血条，正在退出寻路')
             break
         if 卡墙检测():
@@ -814,6 +815,7 @@ def 寻敌子线程():
         while not 共享变量.停止寻敌信号:
             print('寻敌寻路中')
             寻路寻敌检测()
+            time.sleep(0.005)
         time.sleep(0.5)
     print('寻敌子线程已结束')
 
@@ -1003,6 +1005,111 @@ def 战斗场景检测():
         return False
 
 
+import random  # 🌟 顶部确保引入了随机数库
+
+
+def 获取最右侧未通关关卡反向排除版(img, boxes, threshold=0.7):
+    """
+    全新随机决策版：排除已通关和左侧140像素内的关卡后，在剩余有效未通关关卡中随机返回一个坐标。
+    """
+    try:
+        if not boxes:
+            print("\n[🔍 调试-异常] ❌ 未检测到任何关卡区域 (boxes为空)")
+            return 0
+
+        print(f"\n================ 🔍 关卡筛选雷达启动 ================")
+        print(f"[🔍 调试-输入] 屏幕当前检测到 {len(boxes)} 个关卡目标。")
+
+        # ———————— 第一步：收集基础数据 ————————
+        all_x2s = [int(box[2]) for box in boxes]
+        print(f"[🔍 调试-全局] 所有关卡右边界坐标列表: {sorted(all_x2s)}")
+
+        # ———————— 第二步：排除已通关区域，找出所有未通关候选者 ————————
+        uncompleted_candidates = []
+
+        for idx, box in enumerate(boxes, start=1):
+            x1, y1, x2, y2 = map(int, box)
+            center_x, center_y = (x1 + x2) // 2, (y1 + y2) // 2
+
+            print(f"\n--- 📦 正在排查 编号#{idx} 关卡 ---")
+            print(f" 坐标范围: ({x1}, {y1}) -> ({x2}, {y2}) | 中心点: ({center_x}, {center_y})")
+
+            # 获取 ROI 并检查有效性
+            roi = img[max(0, y1):min(img.shape[0], y2), max(0, x1):min(img.shape[1], x2)]
+            if roi.size == 0:
+                print(f" ⚠️ [警告] 编号#{idx} 关卡的 ROI 裁剪区域大小为 0，跳过处理。")
+                continue
+
+            is_occupied = False
+            roi_hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+            roi_gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+
+            for state, data in LOADED_TEMPLATES.items():
+                mask = cv2.inRange(roi_hsv, data['hsv_range'][0], data['hsv_range'][1])
+                pixel_count = cv2.countNonZero(mask)
+
+                if pixel_count > 100:
+                    masked_roi = cv2.bitwise_and(roi_gray, roi_gray, mask=mask)
+                    roi_h, roi_w = masked_roi.shape[:2]
+                    tpl_h, tpl_w = data['gray'].shape[:2]
+                    if roi_h < tpl_h or roi_w < tpl_w:
+                        print(
+                            f" ⏭️ [防崩拦截] 编号#{idx} 区域尺寸({roi_w}x{roi_h})小于模板尺寸({tpl_w}x{tpl_h})，放弃匹配。")
+                        continue
+                    res = cv2.matchTemplate(masked_roi, data['gray'], cv2.TM_CCOEFF_NORMED)
+                    _, max_val, _, _ = cv2.minMaxLoc(res)
+
+                    print(
+                        f" 🔍 [匹配中] 匹配模板:[{state}] | 遮罩像素数:{pixel_count} | 匹配置信度:{max_val:.4f} (阈值:{threshold})")
+
+                    if max_val >= threshold:
+                        print(f" 🛑 [结果] 编号#{idx} 匹配成功！判定为：【已通关/已被占领】")
+                        is_occupied = True
+                        break
+                else:
+                    print(f" ⏭️ [跳过] 匹配模板:[{state}] | 遮罩绿色/特定色像素仅有 {pixel_count} (未达100门槛)")
+
+            # 如果没检测到通关标识，记录为未通关候选
+            if not is_occupied:
+                print(f" ✨ [结果] 编号#{idx} 未检测到任何通关标识 -> 【加入未通关候选队列】")
+                uncompleted_candidates.append({
+                    'id': idx,
+                    'center': (center_x, center_y),
+                    'x2': x2
+                })
+
+        # ———————— 第三步：用新的“排除 x2 <= 140 并随机返回”逻辑做最终决策 ————————
+        print(f"\n================ ⚖️ 最终校验决策阶段 ================")
+        if not uncompleted_candidates:
+            print("[🔍 调试-决策] 😭 候选队列为空：屏幕上所有关卡均已被通关，脚本无操作。")
+            return 0
+
+        print(f"[🔍 调试-决策] 过滤前候选队列中共 {len(uncompleted_candidates)} 个未通关关卡。")
+
+        # 🌟 核心改动 1：使用列表推导式，直接过滤掉所有右边界在 140 以内的目标
+        final_valid_candidates = [cand for cand in uncompleted_candidates if cand['x2'] > 140]
+
+        if not final_valid_candidates:
+            print("[🔍 调试-决策] 🛑 过滤后有效队列为空！所有未通关关卡都在 x2 <= 140 范围内（边缘干扰），放弃点击。")
+            return 0
+
+        print(f"[🔍 调试-决策] 🟢 过滤后通过验证，当前共有 {len(final_valid_candidates)} 个有效未通关关卡可供点击。")
+        for cand in final_valid_candidates:
+            print(f"  -> 可选池 编号#{cand['id']} | 右边界 x2 = {cand['x2']} | 中心点 = {cand['center']}")
+
+        # 🌟 核心改动 2：完全废除最右过滤！利用 random.choice 在通过过滤的池子里随机摇号抓一个出来
+        chosen_candidate = random.choice(final_valid_candidates)
+
+        print(f"\n🎲 [随机抽选完成] 命中池子中的 编号#{chosen_candidate['id']} 关卡！")
+        print(f"📊 目标右边界 x2 = {chosen_candidate['x2']} | 随机返回中心点 = {chosen_candidate['center']}")
+        print(f"====================================================\n")
+
+        return chosen_candidate['center']
+
+    except Exception as e:
+        print('获取最右侧关卡函数出现错误，返回0')
+        print(f'错误信息：{e}')
+        return 0
 def 获取最右侧未通关关卡调试版(img, boxes, threshold=0.7):
     """
     最严格进度筛选逻辑（全面加强调试日志版）
@@ -1406,7 +1513,7 @@ def 未通关章节定位():
                 break
         if 章节滑动次数 == 7:
             print("已满 7 次，执行点击动作...")
-
+            time.sleep(1.5)
             # 执行点击（请替换为你的实际目标坐标）
             下一章ui = (138, 963)
             下一章ui = 坐标随机(下一章ui, left=120, right=120, up=15, down=15)
@@ -1569,8 +1676,8 @@ def 战斗主函数():
     print('开始战斗计时')
     while not 共享变量.超时信号:
         闪避计时=time.time()
-        # print(f'当前已运行时间:{time.time() - start_time_1}')
-        if time.time() - start_time_1 > 240:
+        print(f'当前已运行时间:{time.time() - start_time_1}')
+        if time.time() - start_time_1 > 360:
             共享变量.超时信号 = True
             print('副本已超时，正在执行退出')
             print('正在同步时间')

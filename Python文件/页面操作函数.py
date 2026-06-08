@@ -11,7 +11,7 @@ def 副本首页():
     while True:
         img = 截图()
         n = yolo检测(img)
-        m = 获取最右侧未通关关卡调试版(img,n)
+        m = 获取最右侧未通关关卡反向排除版(img, n)
         print(f'未通过关卡中心坐标{m}')
         if count<=2:
             if m == 0:
@@ -21,8 +21,15 @@ def 副本首页():
             else:
                 clink = 坐标随机(m, left=30, right=30, up=30, down=30)
                 print(f'副本首页点击坐标{clink}')
-                start_time=time.time()
                 adb_click(clink)
+                start_time = time.time()
+                while time.time() - start_time < 3:
+                    if 共享变量.latest_result== '副本-战斗副本弹窗'or 共享变量.latest_result=='副本-剧情副本弹窗':
+                        break
+                    else:
+                        print('副本页点击无效，正在尝试滑动')
+                        d.swipe_ext("left", scale=0.4)
+                        time.sleep(1)
                 print(f'adb点击耗时为：{time.time() - start_time}')
                 break
         else:#滑动三次后仍未发现新关卡，执行退出副本首页
@@ -125,4 +132,4 @@ def 副本_意识重启():
     黑名单更新(共享变量.章节名截图)
 if __name__ == '__main__':
     # while True:
-    副本对话页()
+    副本首页()
