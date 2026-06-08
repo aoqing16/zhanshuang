@@ -1,6 +1,7 @@
 from 函数资源 import *
 import time
 
+章节进入 = False
 def 副本首页():
     count=0
     if 共享变量.超时信号:
@@ -32,6 +33,8 @@ def 副本首页():
                 count=0
                 time.sleep(0.5)
             else:
+                if 章节进入:
+                    黑名单更新(共享变量.章节名截图)
                 图像随机位置点击(路径向导('ziyuanwenjian/UI/img_10.png'))
                 print('正在退出副本首页')
                 break
@@ -62,6 +65,7 @@ def 战斗副本详情页():
     clink = 坐标随机(zhandoukaishi_zuobiao, left=200, right=200, up=40, down=40)
     adb_click(clink)
 def 章节首页():
+    global 章节进入
     章节标签位置初始化()
     章节位置初始化()
     print(f'重载前章节黑名单：{config.章节黑名单}')
@@ -73,6 +77,7 @@ def 章节首页():
     坐标=(1710,707)
     坐标=坐标随机(坐标,left=500,right=500,up=300,down=300)
     adb_click(坐标)
+    章节进入=True
 def 上阵英雄():
     zuobiao = 图像坐标获取(路径向导('ziyuanwenjian/UI/img_2.png'))
     if zuobiao:  # 图像存在说明当前没有上阵英雄
@@ -118,4 +123,4 @@ def 副本_意识重启():
     黑名单更新(共享变量.章节名截图)
 if __name__ == '__main__':
     # while True:
-    副本_意识重启()
+    副本首页()

@@ -25,6 +25,7 @@ import os
 章节黑名单 = {
     "升格-苦行之旅": os.path.join(项目根目录路径, "ziyuanwenjian",'biaoshi','img_20.png'),
     "升格-终末预览": os.path.join(项目根目录路径, "ziyuanwenjian",'biaoshi','img_22.png'),
+    "升格-一灭残昼": os.path.join(项目根目录路径, "ziyuanwenjian",'biaoshi','img_44.png'),
 }
 章节roi = [556, 956, 1943, 1158]
 # print(章节标签黑名单)
@@ -39,3 +40,16 @@ import os
 副本_战斗交互hsv范围upper=[51,6,234]
 
 章节黑名单["随机章节-9698-img_38"] = os.path.join(项目根目录路径, "ziyuanwenjian", "biaoshi", "img_38.png")
+
+章节黑名单["随机章节-4025-img_39"] = os.path.join(项目根目录路径, "ziyuanwenjian", "biaoshi", "img_39.png")
+
+章节黑名单["随机章节-3055-img_40"] = os.path.join(项目根目录路径, "ziyuanwenjian", "biaoshi", "img_40.png")
+
+章节黑名单["随机章节-4423-img_41"] = os.path.join(项目根目录路径, "ziyuanwenjian", "biaoshi", "img_41.png")
+
+章节黑名单["随机章节-3824-img_42"] = os.path.join(项目根目录路径, "ziyuanwenjian", "biaoshi", "img_42.png")
+
+章节黑名单["随机章节-8926-img_43"] = os.path.join(项目根目录路径, "ziyuanwenjian", "biaoshi", "img_43.png")
+
+章节黑名单["随机章节-5696-img_45"] = os.path.join(项目根目录路径, "ziyuanwenjian", "biaoshi", "img_45.png")
+

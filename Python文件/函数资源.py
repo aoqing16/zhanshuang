@@ -1036,6 +1036,12 @@ def 获取最右侧未通关关卡调试版(img, boxes, threshold=0.7):
                 # 💡 详细打印当前状态模板的匹配过程
                 if pixel_count > 100:
                     masked_roi = cv2.bitwise_and(roi_gray, roi_gray, mask=mask)
+                    roi_h, roi_w = masked_roi.shape[:2]
+                    tpl_h, tpl_w = data['gray'].shape[:2]
+                    if roi_h < tpl_h or roi_w < tpl_w:
+                        print(
+                            f" ⏭️ [防崩拦截] 编号#{idx} 区域尺寸({roi_w}x{roi_h})小于模板尺寸({tpl_w}x{tpl_h})，放弃匹配。")
+                        continue
                     res = cv2.matchTemplate(masked_roi, data['gray'], cv2.TM_CCOEFF_NORMED)
                     _, max_val, _, _ = cv2.minMaxLoc(res)
 
@@ -1090,8 +1096,9 @@ def 获取最右侧未通关关卡调试版(img, boxes, threshold=0.7):
             print(f" 提示信息: 左侧虽然存在未通关关卡 (编号#{best_candidate['id']}), 但为了避免回头打旧关卡，执行安全拦截。")
             print(f"====================================================\n")
             return 0
-    except:
+    except Exception as  e:
         print('获取最右侧关卡函数出现错误，返回0')
+        print(f'错误信息：{e}')
         return 0
 def 获取最右侧未通关关卡(img, boxes, threshold=0.85):
     """

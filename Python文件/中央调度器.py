@@ -17,10 +17,11 @@ def yolo页面检测子线程():
 def 截图子线程():
     监听按键截图()
 线程初始化=0
+章节进入=False
 def 页面匹配():
+    global 线程初始化,章节进入
     战斗标识符=战斗场景检测()
     if 战斗标识符:
-        global 线程初始化
         共享变量.停止寻敌信号=False
         if 线程初始化==0:
             t = threading.Thread(target=寻敌子线程, daemon=True)
