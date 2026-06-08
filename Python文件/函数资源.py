@@ -280,11 +280,9 @@ def 坐标随机(target_coord, left=200, right=200, up=150, down=0):
 def adb_click(coord):
     if coord:
         x, y = coord
-        d.click(x, y)
+        d.shell(f"input tap {x} {y}")
     else:
         return
-
-
 def adb_click测试(coord):
     if coord:
         x, y = coord
@@ -1730,4 +1728,4 @@ def 随机小幅度划屏(起止点,滑动方向, 滑动距离=40, 持续时间=
         return False
 
 if __name__ == '__main__':
-    寻路主函数()
+    adb_click改版((2100,1400))

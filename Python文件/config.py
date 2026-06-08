@@ -53,3 +53,7 @@ import os
 
 章节黑名单["随机章节-5696-img_45"] = os.path.join(项目根目录路径, "ziyuanwenjian", "biaoshi", "img_45.png")
 
+
+章节黑名单["随机章节-7034-img_47"] = os.path.join(项目根目录路径, "ziyuanwenjian", "biaoshi", "img_47.png")
+
+章节黑名单["随机章节-3618-img_48"] = os.path.join(项目根目录路径, "ziyuanwenjian", "biaoshi", "img_48.png")
