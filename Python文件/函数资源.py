@@ -283,17 +283,6 @@ def adb_click(coord):
         d.shell(f"input tap {x} {y}")
     else:
         return
-def adb_click测试(coord):
-    if coord:
-        x, y = coord
-
-        # 🟩 用这个代替 d.click(x, y)
-        # 点完的耗时将直接从 10 秒暴跌到 0.005 秒左右！
-        d.shell(f"input tap {x} {y}")
-
-    else:
-        return
-
 
 def 区域内随机坐标点击(x1, x2, y1, y2):
     '''
@@ -664,6 +653,15 @@ def 寻路主函数():
             区域内随机坐标点击(2294,2418,966,1086)
             time.sleep(1.5)
             break
+        if hsv模板匹配('副本-剧情对话页跳过', config.副本_剧情对话页跳过hsv范围lower, config.副本_剧情对话页跳过hsv范围upper):
+            print('检测到剧情对话页，正在退出寻路')
+            break
+        if hsv模板匹配('副本-战斗结算', config.副本_战斗结算hsv范围lower, config.副本_战斗结算hsv范围upper):
+            print('检测到战斗结算页，正在退出寻路')
+            break
+        if 图像是否存在从配置文件中获取文件路径('副本-战斗结算',gray_mode=True):
+            print('检测到意识重启页，正在退出寻路')
+            break
         if 终点标识符检测():
             防卡墙移动()
             break
@@ -700,6 +698,16 @@ def 防卡墙移动():
             print('检测到交互按钮，默认已实现寻路效果')
             区域内随机坐标点击(2294, 2418, 966, 1086)
             time.sleep(1.5)
+            break
+        if hsv模板匹配('副本-剧情对话页跳过', config.副本_剧情对话页跳过hsv范围lower,
+                       config.副本_剧情对话页跳过hsv范围upper):
+            print('检测到剧情对话页，正在退出寻路')
+            break
+        if hsv模板匹配('副本-战斗结算', config.副本_战斗结算hsv范围lower, config.副本_战斗结算hsv范围upper):
+            print('检测到战斗结算页，正在退出寻路')
+            break
+        if 图像是否存在从配置文件中获取文件路径('副本-战斗结算', gray_mode=True):
+            print('检测到意识重启页，正在退出寻路')
             break
         if 卡墙检测():
             卡墙时操作()
@@ -1728,4 +1736,4 @@ def 随机小幅度划屏(起止点,滑动方向, 滑动距离=40, 持续时间=
         return False
 
 if __name__ == '__main__':
-    adb_click改版((2100,1400))
+    防卡墙移动()
