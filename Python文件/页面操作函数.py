@@ -45,20 +45,24 @@ def 副本首页():
                 图像随机位置点击(路径向导('ziyuanwenjian/UI/img_10.png'))
                 print('正在退出副本首页')
                 break
-
-def 副本详情页():
-    zuobiao = 图像坐标获取(路径向导('ziyuanwenjian/UI/img_1.png'))
-    if zuobiao:
-        print(zuobiao)
-        suijizuobiao = 坐标随机(zuobiao, left=96, right=40, up=20, down=20)
-        print(suijizuobiao)
-        adb_click(suijizuobiao)
-    else:
-        print('已开启速通模式')
-    # 执行鼠标点击（准备战斗）
-    zhandoukaishi_zuobiao = (2246, 1310)
-    clink = 坐标随机(zhandoukaishi_zuobiao, left=200, right=200, up=40, down=40)
-    adb_click(clink)
+#
+# def 副本详情页():
+#     zuobiao = 图像坐标获取(路径向导('ziyuanwenjian/UI/img_1.png'))
+#     if zuobiao:
+#         print(zuobiao)
+#         suijizuobiao = 坐标随机(zuobiao, left=96, right=40, up=20, down=20)
+#         print(suijizuobiao)
+#         adb_click(suijizuobiao)
+#     else:
+#         print('已开启速通模式')
+#     # 执行鼠标点击（准备战斗）
+#     # 分流
+#     if 图像是否存在从配置文件中获取文件路径('副本-战斗副本弹窗后期副本'):
+#         print('检测到副本为后期副本')
+#         区域内随机坐标点击(2018,2325,1105,1172)
+#     if 图像是否存在从配置文件中获取文件路径('副本-战斗副本弹窗前期副本'):
+#         print('检测到副本为前期副本')
+#         区域内随机坐标点击(2021,2356,1274,1331)
 def 战斗副本详情页():
     速通模式按键=图像是否存在(路径向导('ziyuanwenjian/biaoshi/img.png'))
     速通_关=图像是否存在(路径向导('ziyuanwenjian/UI/img_1.png'))
@@ -68,9 +72,12 @@ def 战斗副本详情页():
             图像随机位置点击(路径向导('ziyuanwenjian/UI/img_1.png'))
         else:
             print('当前已是速通模式')
-    zhandoukaishi_zuobiao = (2246, 1310)
-    clink = 坐标随机(zhandoukaishi_zuobiao, left=200, right=200, up=40, down=40)
-    adb_click(clink)
+    if 图像是否存在从配置文件中获取文件路径('副本-战斗副本弹窗后期副本'):
+        print('检测到副本为后期副本')
+        区域内随机坐标点击(2018, 2325, 1105, 1172)
+    if 图像是否存在从配置文件中获取文件路径('副本-战斗副本弹窗前期副本'):
+        print('检测到副本为前期副本')
+        区域内随机坐标点击(2021, 2356, 1274, 1331)
 def 章节首页():
     global 章节进入
     章节标签位置初始化()
@@ -99,6 +106,7 @@ def 副本对话页():
     # time.sleep(0.7)
     # n = 坐标随机(zuobiao, left=-375, right=615, up=25, down=25)
     # adb_click(n)
+    time.sleep(1.3)
     区域内随机坐标点击(2237,2480,54,112)
     time.sleep(0.1)
 def 剧情跳过提示():
@@ -132,4 +140,4 @@ def 副本_意识重启():
     黑名单更新(共享变量.章节名截图)
 if __name__ == '__main__':
     # while True:
-    副本首页()
+    战斗副本详情页()
