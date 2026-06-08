@@ -1557,9 +1557,11 @@ def 战斗退出():
 def 战斗主函数():
     empty_count = 0
     start_time_1 = time.time()
+    上一次闪避时间=0
     print('开始战斗计时')
     while not 共享变量.超时信号:
-        print(f'当前已运行时间:{time.time() - start_time_1}')
+        闪避计时=time.time()
+        # print(f'当前已运行时间:{time.time() - start_time_1}')
         if time.time() - start_time_1 > 240:
             共享变量.超时信号 = True
             print('副本已超时，正在执行退出')
@@ -1582,9 +1584,13 @@ def 战斗主函数():
                     empty_count = 0
 
                 if 闪避检测(img) == 1:
-                    print("触发闪避")
-                    闪避()
-                    time.sleep(0.5)  # 闪避后给予短暂空隙，防止连点
+                    print(f'差值为：{闪避计时-上一次闪避时间}')
+                    if 闪避计时-上一次闪避时间>=5:
+                        闪避()
+                        print('闪避冷却已过，执行闪避')
+                        上一次闪避时间=闪避计时
+                    else:
+                        print('闪避冷却中')
                     continue  # 跳过本次循环剩余部分，重新检测
 
                 # 2. 优先级次之：必杀检测
@@ -1736,4 +1742,4 @@ def 随机小幅度划屏(起止点,滑动方向, 滑动距离=40, 持续时间=
         return False
 
 if __name__ == '__main__':
-    防卡墙移动()
+    战斗主函数()
