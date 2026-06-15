@@ -110,7 +110,7 @@ def quick_replace_coordinates(file_path, context_lines=3):
 # --- 运行测试 ---
 if __name__ == "__main__":
     # ⚠️ 填入你脚本的路径
-    目标文件 = r"C:\Users\ZhuanZ1\Desktop\rpa\zhanshuangfuben\Python文件\函数资源.py"
+    目标文件 = r"C:\Users\ZhuanZ1\Desktop\rpa\zhanshuangfuben\Python文件\页面操作函数.py"
 
     # context_lines=4 代表目标数字的上面打印4行，下面打印4行，总共显示9行
     quick_replace_coordinates(目标文件, context_lines=4)

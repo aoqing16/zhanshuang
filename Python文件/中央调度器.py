@@ -4,6 +4,9 @@ import adb截图
 # 定义映射表：名称 -> 文件名
 import 共享变量
 # 定义一个锁，防止主线程读取时，后台线程正在写入，造成数据错乱
+import cv2
+
+
 data_lock = threading.Lock()
 def yolo页面检测子线程():
 
@@ -74,15 +77,6 @@ if __name__ == '__main__':
     t.start()
     t = threading.Thread(target=截图子线程, daemon=True)
     t.start()
-    start_time=time.time()
-    # while time.time() - start_time < 15:
-    #     print(共享变量.latest_result)
-    #     if 共享变量.latest_result:
-    #         print('yolo子线程已启动')
-    #         break
-    #     time.sleep(0.1)
-    # if time.time() - start_time > 15:
-    #     print('yolo子线程超时')
-    # nn=0
+    # time.sleep(1000)
     while True:
         页面匹配()

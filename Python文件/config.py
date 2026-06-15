@@ -22,6 +22,7 @@ import os
     "副本-战斗副本弹窗前期副本":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_13.png'),
     "战后结算":os.path.join(项目根目录路径, "ziyuanwenjian", 'UI','img_6.png'),
     "副本-剧情副本弹窗":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_59.png'),
+    "上阵英雄":os.path.join(项目根目录路径, "ziyuanwenjian", 'UI','img_2.png'),
 
 }
 章节标签黑名单 = {
@@ -83,3 +84,7 @@ import os
 章节黑名单["随机章节-7389-img_57"] = os.path.join(项目根目录路径, "ziyuanwenjian", "biaoshi", "img_57.png")
 
 章节黑名单["随机章节-4537-img_60"] = os.path.join(项目根目录路径, "ziyuanwenjian", "biaoshi", "img_60.png")
+
+章节黑名单["随机章节-5095-img_61"] = os.path.join(项目根目录路径, "ziyuanwenjian", "biaoshi", "img_61.png")
+
+章节黑名单["随机章节-5075-img_62"] = os.path.join(项目根目录路径, "ziyuanwenjian", "biaoshi", "img_62.png")
