@@ -2,7 +2,8 @@ import os
 
 import cv2
 import numpy as np
-from Python文件.函数资源 import 截图
+from Python文件.函数资源 import 截图, 缩放图片至基准尺寸
+
 
 def nothing(x):
     pass
@@ -28,6 +29,7 @@ def hsv实时预览():
     while True:
         # 1. 获取截图
         frame = 截图()
+        frame=缩放图片至基准尺寸(frame)
         if frame is None: continue
 
         # 2. 读取滑动条位置
@@ -123,13 +125,13 @@ def 图像_hsv过滤并保存(输入图片, 输出图片, file_name="hsv_filtere
         return False
 
 
-# ====== 🔍 快速调试运行 ======
-if __name__ == "__main__":
-    # 替换成你真实的图片路径和想存放的路径
-    IMAGE_PATH = r"C:\Users\ZhuanZ1\Desktop\rpa\dataset\yolo图像分类模型数据集\train\副本-战斗页\20260604_164511_92b84f.png"
-    OUTPUT_DIR = r"C:\Users\ZhuanZ1\Desktop\rpa\dataset\hsv_debug_out"
-    # 运行测试 1：保存彩色提取结果
-    图像_hsv过滤并保存(IMAGE_PATH,OUTPUT_DIR, "green_result.png")
+# # ====== 🔍 快速调试运行 ======
+# if __name__ == "__main__":
+#     # 替换成你真实的图片路径和想存放的路径
+#     IMAGE_PATH = r"C:\Users\ZhuanZ1\Desktop\rpa\dataset\yolo图像分类模型数据集\train\副本-战斗页\20260604_164511_92b84f.png"
+#     OUTPUT_DIR = r"C:\Users\ZhuanZ1\Desktop\rpa\dataset\hsv_debug_out"
+#     # 运行测试 1：保存彩色提取结果
+#     图像_hsv过滤并保存(IMAGE_PATH,OUTPUT_DIR, "green_result.png")
 def hsv过滤():
     # 1. 读取图片
     img_path = r"C:\Users\ZhuanZ1\Desktop\rpa\dataset\yolo图像分类模型数据集\train\副本-意识重启\20260607_175209_d604aa - 副本.png"  # 请确保图片文件路径正确

@@ -106,7 +106,7 @@ def 副本对话页():
     # time.sleep(0.7)
     # n = 坐标随机(zuobiao, left=-x相对坐标(375), right=x相对坐标(615), up=y相对坐标(25), down=y相对坐标(25))
     # adb_click(n)
-    time.sleep(1.3)
+    time.sleep(2)
     区域内随机坐标点击(x相对坐标(2237),x相对坐标(2480),y相对坐标(54),y相对坐标(112))
     time.sleep(0.1)
 def 剧情跳过提示():
