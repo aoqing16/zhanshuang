@@ -21,7 +21,8 @@ import os
     "副本-战斗副本弹窗后期副本":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_58.png'),
     "副本-战斗副本弹窗前期副本":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_13.png'),
     "战后结算":os.path.join(项目根目录路径, "ziyuanwenjian", 'UI','img_6.png'),
-    "副本-剧情副本弹窗":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_59.png'),
+    "副本-剧情副本弹窗_前期":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_6.png'),
+    "副本-剧情副本弹窗_后期":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_59.png'),
     "上阵英雄":os.path.join(项目根目录路径, "ziyuanwenjian", 'UI','img_2.png'),
 
 }

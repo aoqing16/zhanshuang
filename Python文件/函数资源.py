@@ -202,7 +202,7 @@ def 图像随机位置点击配置文件(key, threshold=0.7, padding=0):
     h, w = template.shape[:2]
     res = cv2.matchTemplate(缩放后图片, template, cv2.TM_CCOEFF_NORMED)
     _, max_val, _, max_loc = cv2.minMaxLoc(res)
-
+    print(f'图像随机位置点击配置文件函数模板匹配置信度：{max_val}')
     if max_val >= threshold:
         # 获取匹配区域的左上角 (x, y)
         x1, y1 = max_loc
@@ -1135,8 +1135,11 @@ def 获取最右侧未通关关卡反向排除版(img, boxes, threshold=0.6):
         print(f"\n🎲 [随机抽选完成] 命中池子中的 编号#{chosen_candidate['id']} 关卡！")
         print(f"📊 目标右边界 x2 = {chosen_candidate['x2']} | 随机返回中心点 = {chosen_candidate['center']}")
         print(f"====================================================\n")
-
-        return chosen_candidate['center']
+        x,y=chosen_candidate['center']
+        x=x相对坐标(x)
+        y=y相对坐标(y)
+        相对坐标=(x,y)
+        return 相对坐标
 
     except Exception as e:
         print('获取最右侧关卡函数出现错误，返回0')
