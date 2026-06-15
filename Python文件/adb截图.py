@@ -7,6 +7,7 @@ import keyboard
 import time
 # 1. 连接设备
 d = u2.connect('127.0.0.1:16384')
+# d=u2.connect('cf249afc')#真机调试
 def 截图():
     img = d.screenshot(format='opencv')
     return img
@@ -91,7 +92,9 @@ def 监听按键截图():
             time.sleep(1)
     except KeyboardInterrupt:
         keyboard.unhook_all()
+# 设备宽度,设备高度=d.window_size()
+# print(设备宽度,设备高度)
 if __name__ == '__main__':
-    单次截图并保存固定名()
+    监听按键截图()
     # keyboard.add_hotkey('space', 截图触发逻辑)
     # pass

@@ -5,6 +5,7 @@ __pycache__/
 # 虚拟环境
 venv/
 .env/
+yolo关卡识别数据集/
 
 # IDE
 .vscode/

@@ -74,8 +74,15 @@ if __name__ == '__main__':
     t.start()
     t = threading.Thread(target=截图子线程, daemon=True)
     t.start()
-
-    time.sleep(3)
+    start_time=time.time()
+    # while time.time() - start_time < 15:
+    #     print(共享变量.latest_result)
+    #     if 共享变量.latest_result:
+    #         print('yolo子线程已启动')
+    #         break
+    #     time.sleep(0.1)
+    # if time.time() - start_time > 15:
+    #     print('yolo子线程超时')
     # nn=0
     while True:
         页面匹配()

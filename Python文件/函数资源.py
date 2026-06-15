@@ -11,17 +11,40 @@ import 共享变量
 import config
 import importlib
 print('模型加载中')
-model = YOLO(r'C:\Users\ZhuanZ1\runs\detect\train-8\weights\best.pt')#目标检测模型
-model_1 = YOLO(r"C:\Users\ZhuanZ1\runs\classify\train-9\weights\best.pt")#分类模型
+model = YOLO(r'C:\Users\ZhuanZ1\runs\detect\train-17\weights\best.pt')#目标检测模型
+model_1 = YOLO(r"C:\Users\ZhuanZ1\runs\classify\train-14\weights\best.pt")#分类模型
 # from Python文件.中央调度器 import 页面识别
 
 # 1. 连接设备
+# d = u2.connect('cf249afc')
 d = u2.connect('127.0.0.1:16384')
 # 💡 直接改对象的属性，底层会自动映射到 settings['post_delay']
 def 截图():
     img = d.screenshot(format='opencv')
     return img
+设备宽度, 设备高度 = d.window_size()
+print(f'设备宽度：{设备宽度},设备高度{设备高度}')
+x缩放系数 = float(设备宽度 / 2560)
+y缩放系数 = float(设备高度 / 1440)
+print(f'x缩放系数{x缩放系数},y缩放系数{y缩放系数}')
 
+
+def x相对坐标(x):
+    """
+    输入绝对坐标x，输出经缩放后的坐标（整数）
+    :return:
+    """
+    x=int(x*x缩放系数)
+    return x
+
+
+def y相对坐标(y):
+    """
+    输入绝对坐标x，输出经缩放后的坐标（整数）
+    :return:
+    """
+    y = int(y * y缩放系数)
+    return y
 
 def 区域截图(x1=None, y1=None, x2=None, y2=None):
     """
@@ -264,7 +287,7 @@ def 图像随机位置点击配置文件(key, threshold=0.8, padding=0):
     return None
 
 
-def 坐标随机(target_coord, left=200, right=200, up=150, down=0):
+def 坐标随机(target_coord, left=x相对坐标(200), right=x相对坐标(200), up=y相对坐标(150), down=y相对坐标(0)):
     if target_coord:
         target_x, target_y = target_coord
 
@@ -414,6 +437,59 @@ import cv2
 import numpy as np
 
 
+def 怪物名检测(roi=config.怪物名roi, pixel_threshold=50):
+    """
+    检测屏幕指定 ROI 区域内符合 HSV 范围的像素数量
+    :param img: 传入的当前最新 OpenCV 格式截图 (BGR)
+    :param roi: 检查区域 [x1, y1, x2, y2]
+    :param pixel_threshold: 触发判定的像素点数门槛（默认 50）
+    :return: True (达到阈值) 或 False (未达到)
+    """
+    img = 截图()
+    if img is None:
+        print("❌ [血条检测] 传入的图片为空！")
+        return False
+
+    # 1. 解析坐标
+    x1, y1, x2, y2 = roi
+    img_h, img_w = img.shape[:2]
+
+    # 💡 健壮性处理：防止越界导致 cv2 裁剪报错
+    x1_safe = max(0, min(x1, img_w))
+    x2_safe = max(0, min(x2, img_w))
+    y1_safe = max(0, min(y1, img_h))
+    y2_safe = max(0, min(y2, img_h))
+
+    if x1_safe >= x2_safe or y1_safe >= y2_safe:
+        print(f"⚠️ [血条检测] ROI 区域坐标非法: ({x1},{y1})->({x2},{y2})")
+        return False
+
+    # 2. 裁剪血条区域 ROI
+    roi_img = img[y1_safe:y2_safe, x1_safe:x2_safe]
+
+    # 3. 色彩空间转换 BGR -> HSV
+    hsv_roi = cv2.cvtColor(roi_img, cv2.COLOR_BGR2HSV)
+
+    # 4. 定义你给出的高亮白/特定血条颜色范围
+    # 💡 注意：numpy 数组中通常使用 np.uint8 确保数据类型正确
+    lower_hsv = np.array(config.怪物名hsv范围lower, dtype=np.uint8)
+    upper_hsv = np.array(config.怪物名hsv范围upper, dtype=np.uint8)
+
+    # 5. 二值化遮罩抠图
+    mask = cv2.inRange(hsv_roi, lower_hsv, upper_hsv)
+
+    # 6. 计算亮色像素点数量
+    matching_pixels = cv2.countNonZero(mask)
+
+    # 7. 打印详细调试信息，方便你调参
+    print(f"📊 [血条检测调试] 目标区域符合条件的像素数: {matching_pixels} (目标阈值: {pixel_threshold})")
+
+    if matching_pixels > pixel_threshold:
+        return matching_pixels
+    else:
+        return matching_pixels
+
+
 def 血条检测(roi=config.血条roi, pixel_threshold=50):
     """
     检测屏幕指定 ROI 区域内符合 HSV 范围的像素数量
@@ -459,7 +535,7 @@ def 血条检测(roi=config.血条roi, pixel_threshold=50):
     matching_pixels = cv2.countNonZero(mask)
 
     # 7. 打印详细调试信息，方便你调参
-    # print(f"📊 [血条检测调试] 目标区域符合条件的像素数: {matching_pixels} (目标阈值: {pixel_threshold})")
+    print(f"📊 [血条检测调试] 目标区域符合条件的像素数: {matching_pixels} (目标阈值: {pixel_threshold})")
 
     if matching_pixels > pixel_threshold:
         return True,matching_pixels
@@ -560,35 +636,35 @@ def 寻敌操作函数():
 def 前推摇杆(时长=8):
     print("  -> 摇杆前推...")
 
-    d.touch.down(371, 1062)
+    d.touch.down(x相对坐标(371), y相对坐标(1062))
     time.sleep(0.05)
-    d.touch.move(371, 848)
+    d.touch.move(x相对坐标(371), y相对坐标(848))
     time.sleep(时长)
-    d.touch.up(371, 848)
+    d.touch.up(x相对坐标(371), y相对坐标(848))
 def 非阻塞式前移摇杆(最大时长=1):
-    d.touch.down(371, 1062)
+    d.touch.down(x相对坐标(371), y相对坐标(1062))
     time.sleep(0.05)
-    d.touch.move(371, 848)
+    d.touch.move(x相对坐标(371), y相对坐标(848))
     start_time=time.time()
     print('已开始移动，开始计时')
     try:
         while time.time()-start_time<最大时长:
             if hsv模板匹配('副本-战斗对话页', config.副本_战斗对话页hsv范围lower, config.副本_战斗对话页hsv范围upper):
-                区域内随机坐标点击(1567, 1721, 1200, 1247)
+                区域内随机坐标点击(x相对坐标(1567), x相对坐标(1721), y相对坐标(1200), y相对坐标(1247))
                 time.sleep(0.1)
-                区域内随机坐标点击(2206, 2312, 1071, 1183)
+                区域内随机坐标点击(x相对坐标(2206), x相对坐标(2312), y相对坐标(1071), y相对坐标(1183))
                 print('检测到触发战斗对话页，寻路结束')
                 break
             if hsv模板匹配('副本-战斗交互', config.副本_战斗交互hsv范围lower, config.副本_战斗交互hsv范围upper):
                 print('检测到交互按钮，默认已实现寻路效果')
-                区域内随机坐标点击(2294, 2418, 966, 1086)
+                区域内随机坐标点击(x相对坐标(2294), x相对坐标(2418), y相对坐标(966), y相对坐标(1086))
                 time.sleep(1.5)
                 break
             time.sleep(0.005)
     finally:
-        d.touch.up(371, 848)
+        d.touch.up(x相对坐标(371), y相对坐标(848))
 
-屏幕中心x=1278
+屏幕中心x=x相对坐标(1278)
 终点标识符检测结果全局=False
 防遮挡 = 0
 def 终点标识符检测():
@@ -613,12 +689,12 @@ def 终点标识符检测():
         # 计算标识符偏离屏幕中心的距离
         偏差值 = target_x - 屏幕中心x
 
-        if 偏差值 > 80:
-            随机小幅度划屏((1278,692),'right',20)
+        if 偏差值 > x相对坐标(80):
+            随机小幅度划屏((x相对坐标(1278),y相对坐标(692)),'right',x相对坐标(20))
             print("➡️ 标识符偏右，控制摇杆往右前方推，或者向右微调视角")
             # 你的摇杆控制逻辑...
-        elif 偏差值 < -80:
-            随机小幅度划屏((1278, 692),'left',20)
+        elif 偏差值 < -x相对坐标(80):
+            随机小幅度划屏((x相对坐标(1278), y相对坐标(692)),'left',x相对坐标(20))
             print("⬅️ 标识符偏左，控制摇杆往左前方推，或者向左微调视角")
             # 你的摇杆控制逻辑...
         else:
@@ -631,7 +707,7 @@ def 终点标识符检测():
             print('检测到标识符出现后又消失，默认已对准')
             return True
         print('未检测到终点标识符，正在滑动视角')
-        随机小幅度划屏((1278, 692),'left',100)
+        随机小幅度划屏((x相对坐标(1278), y相对坐标(692)),'left',x相对坐标(100))
     # elif 连续性过滤 is None:
     #     防遮挡+=1
     #     print('连续性检测结果为空')
@@ -644,14 +720,14 @@ def 寻路主函数():
     """
     for i in range(1,21):
         if hsv模板匹配('副本-战斗对话页', config.副本_战斗对话页hsv范围lower, config.副本_战斗对话页hsv范围upper):
-            区域内随机坐标点击(1567, 1721, 1200, 1247)
+            区域内随机坐标点击(x相对坐标(1567), x相对坐标(1721), y相对坐标(1200), y相对坐标(1247))
             time.sleep(0.1)
-            区域内随机坐标点击(2206, 2312, 1071, 1183)
+            区域内随机坐标点击(x相对坐标(2206), x相对坐标(2312), y相对坐标(1071), y相对坐标(1183))
             print('检测到触发战斗对话页，寻路结束')
             break
         if hsv模板匹配('副本-战斗交互',config.副本_战斗交互hsv范围lower,config.副本_战斗交互hsv范围upper):
             print('检测到交互按钮，默认已实现寻路效果')
-            区域内随机坐标点击(2294,2418,966,1086)
+            区域内随机坐标点击(x相对坐标(2294),x相对坐标(2418),y相对坐标(966),y相对坐标(1086))
             time.sleep(1.5)
             break
         if hsv模板匹配('副本-剧情对话页跳过', config.副本_剧情对话页跳过hsv范围lower, config.副本_剧情对话页跳过hsv范围upper):
@@ -663,9 +739,9 @@ def 寻路主函数():
         if 图像是否存在从配置文件中获取文件路径('副本-战斗结算',gray_mode=True):
             print('检测到意识重启页，正在退出寻路')
             break
-        bool,血条像素值=血条检测()
-        if bool:
-            print('检测到血条，正在退出寻路')
+        血条像素值=怪物名检测()
+        if 血条像素值>500:
+            print('检测到怪物名，正在退出寻路')
             break
         if 终点标识符检测():
             防卡墙移动()
@@ -675,7 +751,7 @@ def 寻路主函数():
     print('正在初始化终点标识符全局变量')
     终点标识符检测结果全局=False
 def 卡墙时操作():
-    随机小幅度划屏((1278, 692), 'right', 200)
+    随机小幅度划屏((x相对坐标(1278), y相对坐标(692)), 'right', x相对坐标(200))
     非阻塞式前移摇杆(1)
     if 终点标识符检测结果全局:
         print('卡墙，正在二次校验标识符方向')
@@ -693,15 +769,15 @@ def 防卡墙移动():
     最大重试次数=10
     while 移动次数<=7 and 最大重试次数>0:
         if hsv模板匹配('副本-战斗对话页',config.副本_战斗对话页hsv范围lower,config.副本_战斗对话页hsv范围upper):
-            区域内随机坐标点击(1567, 1721, 1200, 1247)
+            区域内随机坐标点击(x相对坐标(1567), x相对坐标(1721), y相对坐标(1200), y相对坐标(1247))
             time.sleep(0.1)
-            区域内随机坐标点击(2206, 2312, 1071, 1183)
+            区域内随机坐标点击(x相对坐标(2206), x相对坐标(2312), y相对坐标(1071), y相对坐标(1183))
             print('检测到触发战斗对话页，寻路结束')
 
             break
         if hsv模板匹配('副本-战斗交互', config.副本_战斗交互hsv范围lower, config.副本_战斗交互hsv范围upper):
             print('检测到交互按钮，默认已实现寻路效果')
-            区域内随机坐标点击(2294, 2418, 966, 1086)
+            区域内随机坐标点击(x相对坐标(2294), x相对坐标(2418), y相对坐标(966), y相对坐标(1086))
             time.sleep(1.5)
             break
         if hsv模板匹配('副本-剧情对话页跳过', config.副本_剧情对话页跳过hsv范围lower,
@@ -714,9 +790,9 @@ def 防卡墙移动():
         if 图像是否存在从配置文件中获取文件路径('副本-战斗结算', gray_mode=True):
             print('检测到意识重启页，正在退出寻路')
             break
-        bool, 血条像素值 = 血条检测()
-        if bool:
-            print('检测到血条，正在退出寻路')
+        血条像素值 = 怪物名检测()
+        if 血条像素值 > 500:
+            print('检测到怪物名，正在退出寻路')
             break
         if 卡墙检测():
             卡墙时操作()
@@ -733,7 +809,7 @@ def 防卡墙移动():
     print('已退出移动')
 
 
-def 卡墙检测(x1=657, y1=190, x2=2158, y2=494, threshold_ratio=0.1):
+def 卡墙检测(x1=x相对坐标(657), y1=y相对坐标(190), x2=x相对坐标(2158), y2=y相对坐标(494), threshold_ratio=0.1):
     """通过对比指定区域(x1, y1, x2, y2)内的像素流变，检测角色是否卡墙
 
     :param x1: 裁剪区域左上角 X 坐标
@@ -860,7 +936,7 @@ def ui变化检测(标识符,timeout=5,interval=0.1):
     return False
 
 
-def yolo检测(img, conf_threshold=0.03):
+def yolo检测(img, conf_threshold=0.5):
     """
     执行单次检测并返回识别到的目标坐标
     :param conf_threshold: 置信度阈值
@@ -1087,10 +1163,10 @@ def 获取最右侧未通关关卡反向排除版(img, boxes, threshold=0.7):
         print(f"[🔍 调试-决策] 过滤前候选队列中共 {len(uncompleted_candidates)} 个未通关关卡。")
 
         # 🌟 核心改动 1：使用列表推导式，直接过滤掉所有右边界在 140 以内的目标
-        final_valid_candidates = [cand for cand in uncompleted_candidates if cand['x2'] > 140]
+        final_valid_candidates = [cand for cand in uncompleted_candidates if cand['x2'] > x相对坐标(140)]
 
         if not final_valid_candidates:
-            print("[🔍 调试-决策] 🛑 过滤后有效队列为空！所有未通关关卡都在 x2 <= 140 范围内（边缘干扰），放弃点击。")
+            print("[🔍 调试-决策] 🛑 过滤后有效队列为空！所有未通关关卡都在 x2 <= x相对坐标(140) 范围内（边缘干扰），放弃点击。")
             return 0
 
         print(f"[🔍 调试-决策] 🟢 过滤后通过验证，当前共有 {len(final_valid_candidates)} 个有效未通关关卡可供点击。")
@@ -1301,7 +1377,7 @@ def 获取最右侧未通关关卡(img, boxes, threshold=0.85):
         return 0
 hsv_min=np.array([0,0,246])
 hsv_max=np.array([74, 3, 255])
-def 战斗标识检测(image, roi=(2065, 1219, 68, 81)):
+def 战斗标识检测(image, roi=(x相对坐标(2065), y相对坐标(1219), x相对坐标(68), y相对坐标(81))):
     """
      检测指定区域内符合HSV区间的像素点数量。
 
@@ -1341,7 +1417,7 @@ def 章节标签位置初始化():
         if 首个章节标签:
             break
         else:
-            d.swipe(150, 345, 160, 1215, steps=10)
+            d.swipe(x相对坐标(150), y相对坐标(345), x相对坐标(160), y相对坐标(1215), steps=10)
             time.sleep(1.5)
 def 章节位置初始化():
     for i in range(6):
@@ -1478,8 +1554,8 @@ def 未通关章节定位():
         if 章节标签黑名单结果:
             print(f"🚫 第 {尝试次数} 次检测：命中黑名单！正在执行切换动作...")
 
-            下一章ui = (138, 963)
-            下一章ui = 坐标随机(下一章ui, left=120, right=120, up=15, down=15)
+            下一章ui = (x相对坐标(138), y相对坐标(963))
+            下一章ui = 坐标随机(下一章ui, left=x相对坐标(120), right=x相对坐标(120), up=y相对坐标(15), down=y相对坐标(15))
             adb_click(下一章ui)
 
             # 适当增加一点等待动画的时间，防止连续点击过快导致游戏 UI 没刷新过来
@@ -1515,8 +1591,8 @@ def 未通关章节定位():
             print("已满 7 次，执行点击动作...")
             time.sleep(1.5)
             # 执行点击（请替换为你的实际目标坐标）
-            下一章ui = (138, 963)
-            下一章ui = 坐标随机(下一章ui, left=120, right=120, up=15, down=15)
+            下一章ui = (x相对坐标(138), y相对坐标(963))
+            下一章ui = 坐标随机(下一章ui, left=x相对坐标(120), right=x相对坐标(120), up=y相对坐标(15), down=y相对坐标(15))
             adb_click(下一章ui)
             time.sleep(0.6)
 
@@ -1528,54 +1604,55 @@ def 未通关章节定位():
 
 
 def 普攻():
-    普攻坐标 = (2388, 1261)
-    clink_zuobiao = 坐标随机(普攻坐标, left=80, right=80, up=70, down=70)
+    普攻坐标 = (x相对坐标(2388), y相对坐标(1261))
+    clink_zuobiao = 坐标随机(普攻坐标, left=x相对坐标(80), right=x相对坐标(80), up=y相对坐标(70), down=y相对坐标(70))
+    print(f'实际点击坐标{clink_zuobiao}')
     adb_click(clink_zuobiao)
 
 
 def 闪避():
-    闪避坐标 = (2107, 1266)
-    clink_zuobiao = 坐标随机(闪避坐标, left=80, right=80, up=80, down=80)
+    闪避坐标 = (x相对坐标(2107), y相对坐标(1266))
+    clink_zuobiao = 坐标随机(闪避坐标, left=x相对坐标(80), right=x相对坐标(80), up=y相对坐标(80), down=y相对坐标(80))
     adb_click(clink_zuobiao)
 
 
 def 必杀():
-    必杀坐标 = (1826, 1267)
-    clink_zuobiao = 坐标随机(必杀坐标, left=80, right=80, up=80, down=80)
+    必杀坐标 = (x相对坐标(1826), y相对坐标(1267))
+    clink_zuobiao = 坐标随机(必杀坐标, left=x相对坐标(80), right=x相对坐标(80), up=y相对坐标(80), down=y相对坐标(80))
     adb_click(clink_zuobiao)
 
 
 def 消球():
-    球1 = (2432, 1032)
-    球2 = (2218, 1028)
-    球1_x = 坐标随机(球1, left=50, right=50, up=40, down=40)
-    球2_x = 坐标随机(球2, left=60, right=60, up=60, down=60)
+    球1 = (x相对坐标(2432), y相对坐标(1032))
+    球2 = (x相对坐标(2218), y相对坐标(1028))
+    球1_x = 坐标随机(球1, left=x相对坐标(50), right=x相对坐标(50), up=y相对坐标(40), down=y相对坐标(40))
+    球2_x = 坐标随机(球2, left=x相对坐标(60), right=x相对坐标(60), up=y相对坐标(60), down=y相对坐标(60))
     adb_click(球1_x)
     adb_click(球2_x)
 
 
 def 寻敌():
-    zuo = (2223, 771)
-    xy = 坐标随机(zuo, left=40, right=40, up=40, down=40)
+    zuo = (x相对坐标(2223), y相对坐标(771))
+    xy = 坐标随机(zuo, left=x相对坐标(40), right=x相对坐标(40), up=x相对坐标(40), down=x相对坐标(40))
     adb_click(xy)
 def 消球检测(img):
     BALL_COLORS = {
         "红黄蓝": {"lower": np.array([0, 0, 210]), "upper": np.array([179, 38, 255])}
     }
-    dict_a = [(2447, 1013), (2228, 1013)]
+    dict_a = [(x相对坐标(2447), y相对坐标(1013)), (x相对坐标(2228), y相对坐标(1013))]
 
     # img = cv2.imread('adbxi.png')
     hsv_img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     for index, (pt_x, pt_y) in enumerate(dict_a):
         # 截取采样区域 (±65像素)
-        sample = hsv_img[pt_y - 50:pt_y + 50, pt_x - 50:pt_x + 50]
+        sample = hsv_img[pt_y - x相对坐标(50):pt_y + x相对坐标(50), pt_x - x相对坐标(50):pt_x + x相对坐标(50)]
 
         # 对该区域遍历每种颜色配置
         for name, bounds in BALL_COLORS.items():
             mask = cv2.inRange(sample, bounds["lower"], bounds["upper"])
             # 如果符合条件的像素超过 1500 个，视为发现目标
-            # print(f'颜色名：{name}像素点：{cv2.countNonZero(mask)}')
-            if cv2.countNonZero(mask) > 240:
+            print(f'消球检测函数：像素点：{cv2.countNonZero(mask)}')
+            if cv2.countNonZero(mask) > 1500:
                 return name
 
     return None
@@ -1592,7 +1669,7 @@ def 必杀检测(image):
     """
     lower_hsv = np.array([40, 0, 248])
     upper_hsv = np.array([110, 71, 255])
-    roi = (57, 123, 423, 8)
+    roi = (x相对坐标(57), y相对坐标(123), x相对坐标(423), 8)
     # 1. 转换颜色空间
     # image=截图()
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
@@ -1626,7 +1703,7 @@ def 闪避检测(image):
     lower_hsv = np.array([0, 205, 197])
     upper_hsv = np.array([29, 255, 255])
     # roi: 区域坐标元组 (x, y, w, h)
-    roi = (739, 562, 900, 542)
+    roi = (x相对坐标(739), y相对坐标(562), x相对坐标(900), y相对坐标(542))
     # 1. 转换颜色空间
     # image=截图()
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
@@ -1648,7 +1725,7 @@ def 闪避检测(image):
     return 0
 
 def 战斗退出():
-    区域内随机坐标点击(2390,2490,55,141)
+    区域内随机坐标点击(x相对坐标(2390),x相对坐标(2490),y相对坐标(55),y相对坐标(141))
     time.sleep(1)
     图像随机位置点击('ziyuanwenjian/biaoshi/img_23.png')
     time.sleep(0.8)
@@ -1663,7 +1740,7 @@ def 战斗退出():
         print(f'作战失败标识符检测：第{i}次')
         if 图像是否存在从配置文件中获取文件路径('作战失败'):
             print(f'检测到作战失败标识符，正在执行点击')
-            区域内随机坐标点击(607, 1955, 494, 1220)
+            区域内随机坐标点击(x相对坐标(607), x相对坐标(1955), y相对坐标(494), y相对坐标(1220))
             time.sleep(0.8)
         else:
             break
@@ -1677,7 +1754,7 @@ def 战斗主函数():
     while not 共享变量.超时信号:
         闪避计时=time.time()
         print(f'当前已运行时间:{time.time() - start_time_1}')
-        if time.time() - start_time_1 > 360:
+        if time.time() - start_time_1 > 600:
             共享变量.超时信号 = True
             print('副本已超时，正在执行退出')
             print('正在同步时间')
@@ -1822,8 +1899,8 @@ def 随机小幅度划屏(起止点,滑动方向, 滑动距离=40, 持续时间=
     # 1. 在屏幕中心 (960, 540) 附近生成一个随机起点，避免每次点位完全一致
     # 这样可以模拟真实手指按在屏幕上的微小位置差异
     x,y=起止点
-    start_x = x + random.randint(-30, 30)
-    start_y = y + random.randint(-15, 15)
+    start_x = x + random.randint(-x相对坐标(30), x相对坐标(30))
+    start_y = y + random.randint(-y相对坐标(15), y相对坐标(15))
 
     # 给滑动的像素距离也加一点点随机抖动，让轨迹更拟真
     real_distance = 滑动距离 + random.randint(-5, 5)
@@ -1831,15 +1908,15 @@ def 随机小幅度划屏(起止点,滑动方向, 滑动距离=40, 持续时间=
     # 2. 根据方向计算对应的终点坐标
     if 滑动方向 == "left":
         end_x = start_x - real_distance
-        end_y = start_y + random.randint(-10, 10)  # Y轴允许有极微小的手抖偏差
+        end_y = start_y + random.randint(-y相对坐标(10), y相对坐标(10))  # Y轴允许有极微小的手抖偏差
     elif 滑动方向 == "right":
         end_x = start_x + real_distance
-        end_y = start_y + random.randint(-10, 10)
+        end_y = start_y + random.randint(-y相对坐标(10), y相对坐标(10))
     elif 滑动方向 == "up":
-        end_x = start_x + random.randint(-10, 10)  # X轴允许有极微小的手抖偏差
+        end_x = start_x + random.randint(-x相对坐标(10), x相对坐标(10))  # X轴允许有极微小的手抖偏差
         end_y = start_y - real_distance
     elif 滑动方向 == "down":
-        end_x = start_x + random.randint(-10, 10)
+        end_x = start_x + random.randint(-x相对坐标(10), x相对坐标(10))
         end_y = start_y + real_distance
     else:
         print(f"❌ 错误：不支持的滑动方向 [{滑动方向}]")
@@ -1857,5 +1934,4 @@ def 随机小幅度划屏(起止点,滑动方向, 滑动距离=40, 持续时间=
         return False
 
 if __name__ == '__main__':
-    bool, 血条像素值 = 血条检测()
-    print(bool)
+    普攻()
