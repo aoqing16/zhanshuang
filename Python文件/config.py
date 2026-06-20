@@ -5,16 +5,27 @@ import sys
 
 if hasattr(sys, '_MEIPASS'):
     # 如果进到这里，说明【当前是 EXE 运行状态】
-    打包根目录路径 = sys._MEIPASS
-    项目根目录路径=os.path.join(打包根目录路径,'_internal')#此为打包后的资源文件夹根目录，并非项目根目录#
+    项目根目录路径 = sys._MEIPASS
+    # 示例："C:\Users\ZhuanZ1\Desktop\rpa\zhanshuangfuben\dist\文件夹测试名\_internal"
 else:
     # 如果进到这里，说明【当前是 LOCAL 本地运行状态】
     项目根目录路径 = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+#     示例：C:\Users\ZhuanZ1\Desktop\rpa\zhanshuangfuben
 print(项目根目录路径)
 标识符文件夹路径=os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi')
-配置文件路径=os.path.join(项目根目录路径, 'Python文件','config.py')
+json配置文件路径=os.path.join(项目根目录路径, "ziyuanwenjian", "config.json")
+yolo模型路径={"分类模型": os.path.join(项目根目录路径, "model", '分类模型.pt'),
+            "目标检测模型": os.path.join(项目根目录路径, "model", '目标检测模型.pt'),
+
+}
+# print(yolo模型路径)
 图片标识符清单={
     "普通剧情":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_26.png'),
+    "战斗副本弹窗_速通模式按键":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img.png'),
+    "章节_通关标志":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_16.png'),
+    "青绿标识符":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_11.png'),
+    "红色标识符":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_19.png'),
+    "首个章节标签":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_15.png'),
     "普通剧情按钮":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_25.png'),
     "隐藏剧情按钮":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_27.png'),
     "作战失败":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_30.png'),
@@ -31,11 +42,17 @@ print(项目根目录路径)
     "副本-剧情副本弹窗_前期":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_6.png'),
     "副本-剧情副本弹窗_后期":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_59.png'),
     "上阵英雄":os.path.join(项目根目录路径, "ziyuanwenjian", 'UI','img_2.png'),
+    "副本_返回":os.path.join(项目根目录路径, "ziyuanwenjian", 'UI','img_10.png'),
+    "上阵英雄的+号":os.path.join(项目根目录路径, "ziyuanwenjian", 'UI','img_2.png'),
+    "编入队伍":os.path.join(项目根目录路径, "ziyuanwenjian", 'UI','img_9.png'),
+    "作战开始":os.path.join(项目根目录路径, "ziyuanwenjian", 'UI','img_3.png'),
+    "剧情跳过提示":os.path.join(项目根目录路径, "ziyuanwenjian", 'UI','img_5.png'),
+    "战斗副本弹窗_速通开关":os.path.join(项目根目录路径, "ziyuanwenjian", 'UI','img_1.png'),
+    "撤退":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_23.png'),
+    "撤退_确定":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_24.png'),
 
 }
-章节标签黑名单 = {
-    "升格": os.path.join(项目根目录路径, "ziyuanwenjian",'biaoshi','img_21.png'),
-}
+
 章节标签roi=[0,694,404,760]
 章节黑名单 = {
     "升格-苦行之旅": os.path.join(项目根目录路径, "ziyuanwenjian",'biaoshi','img_20.png'),
@@ -43,7 +60,7 @@ print(项目根目录路径)
     "升格-一灭残昼": os.path.join(项目根目录路径, "ziyuanwenjian",'biaoshi','img_44.png'),
 }
 章节roi = [556, 956, 1943, 1158]
-# print(章节标签黑名单)
+# print(章节黑名单)
 终点标识符hsv范围lower=[126,8,206]
 终点标识符hsv范围upper=[179,39,255]
 血条hsv范围lower=[0,0,254]

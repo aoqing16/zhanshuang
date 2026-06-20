@@ -1,10 +1,21 @@
-import sys
 import os
+import sys
+import json
 
-if hasattr(sys, '_MEIPASS'):
-    # 如果进到这里，说明【当前是 EXE 运行状态】
-    项目根目录路径 = sys._MEIPASS
-else:
-    # 如果进到这里，说明【当前是 LOCAL 本地运行状态】
-    项目根目录路径 = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-print(项目根目录路径)
+项目根目录路径= os.path.dirname(os.path.abspath(__file__))
+json_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "ziyuanwenjian", "config.json")
+
+def load_my_config():
+    with open(json_path, "r", encoding="utf-8") as f:
+        config_data = json.load(f)
+    return config_data
+
+json_data = load_my_config()
+章节黑名单路径=json_data.get('章节黑名单')
+章节黑名单绝对路径字典 = {
+    key: os.path.join(项目根目录路径, value.replace("/", os.sep))
+    for key, value in 章节黑名单路径.items()
+}
+
+# ==================== 🛠️ 测试输出 ====================
+print(章节黑名单绝对路径字典)
