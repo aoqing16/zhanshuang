@@ -1,18 +1,15 @@
-import threading
-import random
 import time
 from ultralytics import YOLO
-import numpy as np
 import uiautomator2 as u2
-import cv2
 import os
 import sys
 import 共享变量
 import config
-import importlib
+import cv2
+import numpy as np
 print('模型加载中')
-model = YOLO(r'C:\Users\ZhuanZ1\runs\detect\train-17\weights\best.pt')#目标检测模型
-model_1 = YOLO(r"C:\Users\ZhuanZ1\runs\classify\train-14\weights\best.pt")#分类模型
+model = YOLO(r'C:\Users\ZhuanZ1\Desktop\rpa\zhanshuangfuben\model\目标检测模型.pt',task='detect')#目标检测模型
+model_1 = YOLO(r"C:\Users\ZhuanZ1\Desktop\rpa\zhanshuangfuben\model\分类模型.pt",task='classify')#分类模型
 # from Python文件.中央调度器 import 页面识别
 
 # 1. 连接设备
@@ -397,8 +394,7 @@ def 页面识别灰度模式(threshold=0.7):
     return detected_names
 
 
-import cv2
-import numpy as np
+
 
 
 def 怪物名检测(roi=config.怪物名roi, pixel_threshold=40):
@@ -446,7 +442,7 @@ def 怪物名检测(roi=config.怪物名roi, pixel_threshold=40):
     matching_pixels = cv2.countNonZero(mask)
 
     # 7. 打印详细调试信息，方便你调参
-    print(f"📊 [血条检测调试] 目标区域符合条件的像素数: {matching_pixels} (目标阈值: {pixel_threshold})")
+    # print(f"📊 [血条检测调试] 目标区域符合条件的像素数: {matching_pixels} (目标阈值: {pixel_threshold})")
 
     if matching_pixels > pixel_threshold:
         return matching_pixels
@@ -499,7 +495,7 @@ def 血条检测(roi=config.血条roi, pixel_threshold=40):
     matching_pixels = cv2.countNonZero(mask)
 
     # 7. 打印详细调试信息，方便你调参
-    print(f"📊 [血条检测调试] 目标区域符合条件的像素数: {matching_pixels} (目标阈值: {pixel_threshold})")
+    # print(f"📊 [血条检测调试] 目标区域符合条件的像素数: {matching_pixels} (目标阈值: {pixel_threshold})")
 
     if matching_pixels > pixel_threshold:
         return True,matching_pixels
@@ -538,7 +534,7 @@ def 寻敌状态检测(状态参数):
     # 计算绝对变化幅度（拿当前值和上一次记录的值做减法）
     变化幅度 = abs(当前像素值 - _上次的像素值)
 
-    print(f"📊 [变化率雷达] 当前像素:{当前像素值} | 上次像素:{_上次的像素值} | 差值:{变化幅度}")
+    # print(f"📊 [变化率雷达] 当前像素:{当前像素值} | 上次像素:{_上次的像素值} | 差值:{变化幅度}")
 
     # 💡 核心校验：把当前值覆盖存入记忆，供下一次循环对比
     _上次的像素值 = 当前像素值
@@ -845,39 +841,11 @@ def 寻敌子线程():
     print('子线程运行中')
     while True:
         while not 共享变量.停止寻敌信号:
-            print('寻敌寻路中')
+            # print('寻敌寻路中')
             寻路寻敌检测()
             time.sleep(0.005)
         time.sleep(0.5)
     print('寻敌子线程已结束')
-
-def 页面识别(threshold=0.7):
-    """
-    遍历映射表，检测截图中存在的所有目标
-    :param screenshot: 当前截图的 numpy 数组
-    :param threshold: 匹配阈值
-    :return: 一个列表，包含检测到的所有名称
-    """
-    detected_names = []
-    img = 缩放图片至基准尺寸(截图())
-    for name, filename in TEMPLATE_MAP.items():
-        template_path = os.path.join(TEMPLATE_DIR, filename)
-
-        # 读取模板
-        template = cv2.imread(template_path, cv2.IMREAD_COLOR)
-        if template is None:
-            print(f"警告: 无法加载模板 {filename}")
-            continue
-
-        # 模板匹配
-        res = cv2.matchTemplate(img, template, cv2.TM_CCOEFF_NORMED)
-        _, max_val, _, _ = cv2.minMaxLoc(res)
-
-        # 如果置信度高于阈值，认为存在
-        if max_val >= threshold:
-            detected_names.append(name)
-
-    return detected_names
 def ui变化检测(标识符,timeout=5,interval=0.1):
     start_time = time.time()
     while time.time() - start_time < timeout:
@@ -1040,7 +1008,7 @@ def 战斗场景检测():
 import random  # 🌟 顶部确保引入了随机数库
 
 
-def 获取最右侧未通关关卡反向排除版(img, boxes, threshold=0.6):
+def 获取最右侧未通关关卡反向排除版(img, boxes, threshold=0.67):
     """
     全新随机决策版：排除已通关和左侧140像素内的关卡后，在剩余有效未通关关卡中随机返回一个坐标。
     """
@@ -1145,195 +1113,7 @@ def 获取最右侧未通关关卡反向排除版(img, boxes, threshold=0.6):
         print('获取最右侧关卡函数出现错误，返回0')
         print(f'错误信息：{e}')
         return 0
-def 获取最右侧未通关关卡调试版(img, boxes, threshold=0.7):
-    """
-    最严格进度筛选逻辑（全面加强调试日志版）
-    """
-    try:
-        if not boxes:
-            print("\n[🔍 调试-异常] ❌ 未检测到任何关卡区域 (boxes为空)")
-            return 0
 
-        print(f"\n================ 🔍 关卡筛选雷达启动 ================")
-        print(f"[🔍 调试-输入] 屏幕当前检测到 {len(boxes)} 个关卡目标。")
-
-        # ———————— 第一步：获取全局最右边界 (x2) ————————
-        # 增加排序日志，让你看到所有关卡的右边界排布
-        all_x2s = [int(box[2]) for box in boxes]
-        max_x2_overall = max(all_x2s)
-        print(f"[🔍 调试-全局] 所有关卡右边界坐标列表: {sorted(all_x2s)}")
-        print(f"[🔍 调试-全局] 🎯 认定当前屏幕【全局最右侧边界】 max_x2_overall = {max_x2_overall}")
-
-        # ———————— 第二步：排除已通关区域，找出候选者 ————————
-        uncompleted_candidates = []
-
-        # 💡 引入 enumerate 给关卡编个号 (从1开始)，方便在日志里追踪具体是哪一个
-        for idx, box in enumerate(boxes, start=1):
-            x1, y1, x2, y2 = map(int, box)
-            center_x, center_y = (x1 + x2) // 2, (y1 + y2) // 2
-
-            print(f"\n--- 📦 正在排查 编号#{idx} 关卡 ---")
-            print(f" 坐标范围: ({x1}, {y1}) -> ({x2}, {y2}) | 中心点: ({center_x}, {center_y})")
-
-            # 获取 ROI 并检查有效性
-            roi = img[max(0, y1):min(img.shape[0], y2), max(0, x1):min(img.shape[1], x2)]
-            if roi.size == 0:
-                print(f" ⚠️ [警告] 编号#{idx} 关卡的 ROI 裁剪区域大小为 0，跳过处理。")
-                continue
-
-            is_occupied = False
-            roi_hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
-            roi_gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-
-            for state, data in LOADED_TEMPLATES.items():
-                mask = cv2.inRange(roi_hsv, data['hsv_range'][0], data['hsv_range'][1])
-                pixel_count = cv2.countNonZero(mask)
-
-                # 💡 详细打印当前状态模板的匹配过程
-                if pixel_count > 100:
-                    masked_roi = cv2.bitwise_and(roi_gray, roi_gray, mask=mask)
-                    roi_h, roi_w = masked_roi.shape[:2]
-                    tpl_h, tpl_w = data['gray'].shape[:2]
-                    if roi_h < tpl_h or roi_w < tpl_w:
-                        print(
-                            f" ⏭️ [防崩拦截] 编号#{idx} 区域尺寸({roi_w}x{roi_h})小于模板尺寸({tpl_w}x{tpl_h})，放弃匹配。")
-                        continue
-                    res = cv2.matchTemplate(masked_roi, data['gray'], cv2.TM_CCOEFF_NORMED)
-                    _, max_val, _, _ = cv2.minMaxLoc(res)
-
-                    print(
-                        f" 🔍 [匹配中] 匹配模板:[{state}] | 遮罩像素数:{pixel_count} | 匹配置信度:{max_val:.4f} (阈值:{threshold})")
-
-                    if max_val >= threshold:
-                        print(f" 🛑 [结果] 编号#{idx} 匹配成功！判定为：【已通关/已被占领】")
-                        is_occupied = True
-                        break
-                else:
-                    # 记录一下为什么连模板匹配都没进（经常因为色彩范围不对导致像素不够）
-                    print(f" ⏭️ [跳过] 匹配模板:[{state}] | 遮罩绿色/特定色像素仅有 {pixel_count} (未达100门槛)")
-
-            # 将未被匹配到的（未通关）存入候选
-            if not is_occupied:
-                print(f" ✨ [结果] 编号#{idx} 未检测到任何通关标识 -> 【加入未通关候选队列】")
-                uncompleted_candidates.append({
-                    'id': idx,
-                    'center': (center_x, center_y),
-                    'x2': x2
-                })
-
-        # ———————— 第三步 & 第四步：找出候选中的最右，并与全局做比较 ————————
-        print(f"\n================ ⚖️ 最终校验决策阶段 ================")
-        if not uncompleted_candidates:
-            print("[🔍 调试-决策] 😭 候选队列为空：屏幕上所有关卡均已被通关，脚本无操作。")
-            return 0
-
-        print(f"[🔍 调试-决策] 候选队列中共有 {len(uncompleted_candidates)} 个未通关关卡：")
-        for cand in uncompleted_candidates:
-            print(f"  -> 候选 编号#{cand['id']} | 右边界 x2 = {cand['x2']} | 中心点 = {cand['center']}")
-
-        # 找出剩余未通关关卡中，最靠右的那一个
-        best_candidate = max(uncompleted_candidates, key=lambda c: c['x2'])
-        candidate_max_x2 = best_candidate['x2']
-
-        # 计算差距，防止因为 1~2 个像素的微小变动错失点击机会
-        pixel_diff = abs(candidate_max_x2 - max_x2_overall)
-        print(f"\n[🔍 调试-对比] 候选最右边界 x2 = {candidate_max_x2} (来自编号#{best_candidate['id']})")
-        print(f"[🔍 调试-对比] 全局最右边界 x2 = {max_x2_overall}")
-        print(f"[🔍 调试-对比] 两者像素绝对差距: {pixel_diff} 像素")
-
-        # 【最终核心逻辑校验】
-        # 💡 考虑实际运行中可能有 1-2 像素的微小波动，这里我依然维持你绝对相等的严格逻辑，但打印极度清晰
-        if candidate_max_x2 == max_x2_overall:
-            print(f" 🟩 [校验通过] ✅ 最新的关卡 (编号#{best_candidate['id']}) 尚未通关！准备返回中心点进行点击。")
-            print(f"====================================================\n")
-            return best_candidate['center']
-        else:
-            print(f" 🟥 [校验失败] ❌ 物理位置最靠右的图标已经是 '已通关' 状态。")
-            print(f" 提示信息: 左侧虽然存在未通关关卡 (编号#{best_candidate['id']}), 但为了避免回头打旧关卡，执行安全拦截。")
-            print(f"====================================================\n")
-            return 0
-    except Exception as  e:
-        print('获取最右侧关卡函数出现错误，返回0')
-        print(f'错误信息：{e}')
-        return 0
-def 获取最右侧未通关关卡(img, boxes, threshold=0.85):
-    """
-    最严格进度筛选逻辑：
-    1. 计算屏幕上所有区域的 x2 最大值 (全局最右边界)。
-    2. 遍历所有区域，通过模板匹配排除已通关区域，找出所有“未通关”候选者。
-    3. 如果存在候选者，找出候选者中 x2 最大的那个 (候选最右边界)。
-    4. 【最终校验】：只有当 (候选最右边界 == 全局最右边界) 时，才返回该候选中心。
-    """
-    if not boxes:
-        print("未检测到任何关卡区域")
-        return 0
-    print(f'当前检测到 {len(boxes)} 个关卡')
-
-    # ———————— 第一步：获取全局最右边界 (x2) ————————
-    # 我们认为，这个坐标代表了当前屏幕上最新的关卡所在位置
-    all_x2s = [int(box[2]) for box in boxes]
-    max_x2_overall = max(all_x2s)
-    print(f"当前屏幕最右侧图标边界 x2 = {max_x2_overall}")
-
-    # ———————— 第二步：排除已通关区域，找出候选者 ————————
-    uncompleted_candidates = []
-
-    for box in boxes:
-        x1, y1, x2, y2 = map(int, box)
-        # 获取 ROI 并检查有效性
-        roi = img[max(0, y1):min(img.shape[0], y2), max(0, x1):min(img.shape[1], x2)]
-        if roi.size == 0: continue
-
-        # 模板匹配状态排查 (逻辑同你原有的，此处不赘述细节)
-        is_occupied = False
-        roi_hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
-        roi_gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-
-        for state, data in LOADED_TEMPLATES.items():
-            mask = cv2.inRange(roi_hsv, data['hsv_range'][0], data['hsv_range'][1])
-            print(f'副本首页标识符像素数量：{cv2.countNonZero(mask)}')
-            if cv2.countNonZero(mask) > 100:
-                masked_roi = cv2.bitwise_and(roi_gray, roi_gray, mask=mask)
-                res = cv2.matchTemplate(masked_roi, data['gray'], cv2.TM_CCOEFF_NORMED)
-                _, max_val, _, _ = cv2.minMaxLoc(res)
-                print(f'副本标识符模板匹配置信度{max_val}')
-                if max_val >= threshold:
-                    is_occupied = True
-                    break
-
-        # 将未被匹配到的（未通关）存入候选
-        if not is_occupied:
-            print(f'存在关卡未被检测到通关标识符')
-            uncompleted_candidates.append({
-                'center': ((x1 + x2) // 2, (y1 + y2) // 2),
-                'x2': x2
-            })
-            print(uncompleted_candidates)
-
-    # ———————— 第三步 & 第四步：找出候选中的最右，并与全局做比较 ————————
-
-    if not uncompleted_candidates:
-        print("屏幕上所有关卡均已通关 (或未匹配到)，无操作。")
-        return 0
-
-    # 找出剩余未通关关卡中，最靠右的那一个
-    best_candidate = max(uncompleted_candidates, key=lambda c: c['x2'])
-    candidate_max_x2 = best_candidate['x2']
-
-    print(f"剩余未通关关卡中最靠右的边界 x2 = {candidate_max_x2}")
-
-    # 【最终核心逻辑校验】
-    # 只有当：最右边的未通关关卡的 x2，等于全局最右图标的 x2
-    # 这意味着：最新的关卡还没打，可以打。
-    if candidate_max_x2 == max_x2_overall:
-        print(f"校验通过！最新的关卡 (x2={candidate_max_x2}) 尚未通关，准备点击。")
-        return best_candidate['center']
-    else:
-        # 如果 candidate_max_x2 < max_x2_overall，
-        # 说明物理位置最靠右的那个已经是"已通关"状态了。
-        print(f"校验失败：最靠右的图标已被通关 (全局x2={max_x2_overall})。")
-        print(f"左侧存在未通关关卡 (x2={candidate_max_x2})，但按逻辑跳过，避免点旧关卡。")
-        return 0
 hsv_min=np.array([0,0,246])
 hsv_max=np.array([74, 3, 255])
 # hsv_max=np.array([170, 240, 255])
@@ -1612,7 +1392,7 @@ def 消球检测(img):
             mask = cv2.inRange(sample, bounds["lower"], bounds["upper"])
             # 如果符合条件的像素超过 1500 个，视为发现目标
             print(f'消球检测函数：像素点：{cv2.countNonZero(mask)}')
-            if cv2.countNonZero(mask) > 1500:
+            if cv2.countNonZero(mask) > 1200:
                 return name
 
     return None

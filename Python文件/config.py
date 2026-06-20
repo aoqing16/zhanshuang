@@ -1,9 +1,16 @@
 import os
+import sys
 
 # 获取脚本运行路径
-运行路径 = os.path.abspath(__file__)
-上级目录 = os.path.dirname(运行路径)
-项目根目录路径 = os.path.dirname(上级目录)
+
+if hasattr(sys, '_MEIPASS'):
+    # 如果进到这里，说明【当前是 EXE 运行状态】
+    打包根目录路径 = sys._MEIPASS
+    项目根目录路径=os.path.join(打包根目录路径,'_internal')#此为打包后的资源文件夹根目录，并非项目根目录#
+else:
+    # 如果进到这里，说明【当前是 LOCAL 本地运行状态】
+    项目根目录路径 = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+print(项目根目录路径)
 标识符文件夹路径=os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi')
 配置文件路径=os.path.join(项目根目录路径, 'Python文件','config.py')
 图片标识符清单={

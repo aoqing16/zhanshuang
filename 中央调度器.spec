@@ -1,21 +1,13 @@
 # -*- mode: python ; coding: utf-8 -*-
-from PyInstaller.utils.hooks import collect_all
-
-datas = [('ziyuanwenjian', 'ziyuanwenjian')]
-binaries = []
-hiddenimports = []
-tmp_ret = collect_all('ultralytics')
-datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
-tmp_ret = collect_all('uiautomator2')
-datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
 
 a = Analysis(
     ['Python文件\\中央调度器.py'],
     pathex=[],
-    binaries=binaries,
-    datas=datas,
-    hiddenimports=hiddenimports,
+    binaries=[],
+    datas=[('model','model'),('ziyuanwenjian','ziyuanwenjian'),
+    ('venv/Lib/site-packages/uiautomator2/assets', 'uiautomator2/assets')],
+    hiddenimports=['ultralytics','torch','uiautomator2','cv2'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -28,20 +20,26 @@ pyz = PYZ(a.pure)
 exe = EXE(
     pyz,
     a.scripts,
-    a.binaries,
-    a.datas,
     [],
-    name='中央调度器',
+    exclude_binaries=True,
+    name='测试exe名',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
-    upx_exclude=[],
-    runtime_tmpdir=None,
+    upx=False,
     console=True,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+)
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.datas,
+    strip=False,
+    upx=False,
+    upx_exclude=[],
+    name='文件夹测试名',
 )

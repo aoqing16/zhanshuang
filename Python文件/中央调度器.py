@@ -1,22 +1,21 @@
-from Python文件.adb截图 import 监听按键截图
+import threading
+from adb截图 import 监听按键截图
 from 页面操作函数 import *
-import adb截图
-# 定义映射表：名称 -> 文件名
 import 共享变量
 # 定义一个锁，防止主线程读取时，后台线程正在写入，造成数据错乱
-import cv2
-
 
 data_lock = threading.Lock()
 def yolo页面检测子线程():
+    # try:
+        while True:
+            result = yolo页面检测主函数()
+            with data_lock:
+                共享变量.latest_result = result
+                # print(f'更新页面检测结果：{共享变量.latest_result}')
 
-    while True:
-        result = yolo页面检测主函数()
-        with data_lock:
-            共享变量.latest_result = result
-            # print(f'更新页面检测结果：{共享变量.latest_result}')
-
-        time.sleep(0.1)  # 适当休息，避免识别线程跑得太快把CPU吃满
+            time.sleep(0.1)  # 适当休息，避免识别线程跑得太快把CPU吃满
+    # except KeyboardInterrupt:
+    #     print('关闭子线程')
 def 截图子线程():
     监听按键截图()
 线程初始化=0
@@ -69,14 +68,22 @@ def 页面匹配():
     elif 共享变量.latest_result == '副本-战斗对话页':
         副本战斗对话页()
         ui变化检测('副本-战斗对话页')
+    else:
+        print('没有触发任何动作，进入0.1秒等待')
+        time.sleep(0.1) 
 
 ##################################################
 
 if __name__ == '__main__':
-    t = threading.Thread(target=yolo页面检测子线程, daemon=True)
-    t.start()
-    t = threading.Thread(target=截图子线程, daemon=True)
-    t.start()
-    # time.sleep(1000)
-    while True:
-        页面匹配()
+    try:
+        t = threading.Thread(target=yolo页面检测子线程, daemon=True)
+        t.start()
+        t = threading.Thread(target=截图子线程, daemon=True)
+        t.start()
+        # time.sleep(1000)
+        while True:
+            页面匹配()
+    except KeyboardInterrupt:
+        print('脚本主动结束')
+    except Exception as e:
+        print(f'脚本出错了,错误信息:【{e}】')
