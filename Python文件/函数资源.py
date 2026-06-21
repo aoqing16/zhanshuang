@@ -20,7 +20,7 @@ try:
     def 获取ADB可执行路径():
         """（就是你刚刚测试成功的函数）"""
         if hasattr(sys, '_MEIPASS'):
-           return os.path.join(sys._MEIPASS, '_internal', 'adbutils', 'binaries', 'adb.exe')
+           return os.path.join(sys._MEIPASS,'adbutils', 'binaries', 'adb.exe')
         else:
             try:
                 import adbutils

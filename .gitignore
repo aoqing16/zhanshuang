@@ -17,8 +17,15 @@ yolo关卡识别数据集/
 # 打包文件
 dist/
 build/
-
+*.spec
+#测试py文件
+Python文件/adb连接测试.py
+Python文件/HSV图像工具.py
+Python文件/IO测试.py
+Python文件/乾坤大挪移.py
+Python文件/数据合成.py
+Python文件/高级替换.py
 # 系统文件
 .DS_Store
 #图片文件
-*.png
+screenshots
