@@ -29,3 +29,5 @@ Python文件/高级替换.py
 .DS_Store
 #图片文件
 Python文件/screenshots
+#图片备份文件夹
+deleted_images_backup
