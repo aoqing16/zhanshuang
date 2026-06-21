@@ -1,5 +1,7 @@
 import threading
-from adb截图 import 监听按键截图
+import traceback
+
+# from adb截图 import 监听按键截图
 from 页面操作函数 import *
 import 共享变量
 # 定义一个锁，防止主线程读取时，后台线程正在写入，造成数据错乱
@@ -16,8 +18,8 @@ def yolo页面检测子线程():
             time.sleep(0.1)  # 适当休息，避免识别线程跑得太快把CPU吃满
     # except KeyboardInterrupt:
     #     print('关闭子线程')
-def 截图子线程():
-    监听按键截图()
+# def 截图子线程():
+#     监听按键截图()
 线程初始化=0
 章节进入=False
 def 页面匹配():
@@ -78,12 +80,24 @@ if __name__ == '__main__':
     try:
         t = threading.Thread(target=yolo页面检测子线程, daemon=True)
         t.start()
-        t = threading.Thread(target=截图子线程, daemon=True)
-        t.start()
-        # time.sleep(1000)
+        # t = threading.Thread(target=截图子线程, daemon=True)
+        # t.start()
         while True:
             页面匹配()
     except KeyboardInterrupt:
         print('脚本主动结束')
     except Exception as e:
-        print(f'脚本出错了,错误信息:【{e}】')
+        # 🚨 核心拦截网：只要代码敢报错，就会被这里死死抓取，绝对不会闪退！
+        print("\n" + "=" * 50)
+        print("❌ [脚本运行发生致命错误] 报错详细信息如下：")
+        print("=" * 50)
+
+        # 这一行是灵魂：它能把 PyCharm 里的那种红字报错行数、原因，原封不动打印出来
+        traceback.print_exc()
+
+        print("=" * 50)
+        print("💡 提示：您可以截图上方红字报错，发送给作者进行修复。")
+
+        # 🌟 强行卡住窗口！用户不敲回车，黑框死活不会关闭！
+        input("\n👉 按 [回车键(Enter)] 退出程序...")
+        sys.exit(1)

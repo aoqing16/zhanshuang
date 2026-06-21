@@ -6,7 +6,7 @@ import uuid
 import keyboard
 import time
 # 1. 连接设备
-d = u2.connect('127.0.0.1:16384')
+d = u2.connect('127.0.0.1:5555 ')
 # d=u2.connect('cf249afc')#真机调试
 def 截图():
     img = d.screenshot(format='opencv')
