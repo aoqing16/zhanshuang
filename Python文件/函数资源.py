@@ -1661,19 +1661,16 @@ try:
             print(f"⚠️ 滑动操作异常: {e}")
             return False
 except Exception as e:
-    # 🚨 核心拦截网：只要代码敢报错，就会被这里死死抓取，绝对不会闪退！
-    print("\n" + "=" * 50)
-    print("❌ [脚本运行发生致命错误] 报错详细信息如下：")
-    print("=" * 50)
+    print("\n❌ 脚本崩溃！报错信息已自动记录至本地 [崩溃日志.txt]")
 
-    # 这一行是灵魂：它能把 PyCharm 里的那种红字报错行数、原因，原封不动打印出来
+    # 自动把报错塞进本地文件，哪怕窗口关了，账本还在！
+    with open("崩溃日志-函数资源py.txt", "a", encoding="utf-8") as f:
+        import datetime
+
+        f.write(f"\n\n⏰ 崩溃时间: {datetime.datetime.now()}\n")
+        traceback.print_exc(file=f)  # 把报错堆栈写进文件
+
     traceback.print_exc()
-
-    print("=" * 50)
-    print("💡 提示：您可以截图上方红字报错，发送给作者进行修复。")
-
-    # 🌟 强行卡住窗口！用户不敲回车，黑框死活不会关闭！
-    input("\n👉 按 [回车键(Enter)] 退出程序...")
-    sys.exit(1)
+    input("\n👉 按回车键退出程序...")
 if __name__ == '__main__':
     print(加载配置文件())
