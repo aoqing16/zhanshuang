@@ -1,7 +1,5 @@
 import threading
-import traceback
-
-# from adb截图 import 监听按键截图
+from adb截图 import 监听按键截图
 from 页面操作函数 import *
 import 共享变量
 # 定义一个锁，防止主线程读取时，后台线程正在写入，造成数据错乱
@@ -18,8 +16,8 @@ def yolo页面检测子线程():
             time.sleep(0.1)  # 适当休息，避免识别线程跑得太快把CPU吃满
     # except KeyboardInterrupt:
     #     print('关闭子线程')
-# def 截图子线程():
-#     监听按键截图()
+def 截图子线程():
+    监听按键截图()
 线程初始化=0
 章节进入=False
 def 页面匹配():
@@ -80,8 +78,11 @@ if __name__ == '__main__':
     try:
         t = threading.Thread(target=yolo页面检测子线程, daemon=True)
         t.start()
-        # t = threading.Thread(target=截图子线程, daemon=True)
-        # t.start()
+        if hasattr(sys, '_MEIPASS'):
+            pass
+        else:
+            t = threading.Thread(target=截图子线程, daemon=True)
+            t.start()
 
         while True:
             页面匹配()

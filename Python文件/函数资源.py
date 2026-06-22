@@ -1,3 +1,4 @@
+import math
 import shutil
 import subprocess
 import time
@@ -13,8 +14,9 @@ import cv2
 import numpy as np
 print('模型加载中')
 try:
-    model = YOLO(config.yolo模型路径.get('目标检测模型'),task='detect')#目标检测模型
-    model_1 = YOLO(config.yolo模型路径.get('分类模型'),task='classify')#分类模型
+    副本首页模型= YOLO(config.yolo模型路径.get('目标检测模型'),task='detect')#目标检测模型
+    分类模型 = YOLO(config.yolo模型路径.get('分类模型'), task='classify')#分类模型
+    地标检测模型 = YOLO(config.yolo模型路径.get('地标检测模型'), task='detect')#地标检测模型
 
 
     def 获取ADB可执行路径():
@@ -105,8 +107,10 @@ try:
 
             print(f"\n🚀 正在对接您选定的模拟器: {目标地址} ...")
             return u2.connect(目标地址)
-    d = 自动连接战双模拟器()
-
+    if hasattr(sys, '_MEIPASS'):
+        d = 自动连接战双模拟器()
+    else:
+        d=u2.connect('127.0.0.1:16384')
     if d:
         print('已成功连接到模拟器，正在启动脚本')
     else:
@@ -141,6 +145,101 @@ try:
         y = int(y * y缩放系数)
         return y
 
+    def 夹角计算(arrow_x, arrow_y):
+        """根据地标/箭头坐标，计算其相对于屏幕正前方的顺时针夹角 (0° - 360°)"""
+        # 1. 获取屏幕中心（也就是角色在屏幕上的物理坐标）
+        center_x = 设备宽度 // 2
+        center_y = 设备高度
+
+        # 2. 计算地标相对于屏幕中心的横向、纵向位移
+        dx = arrow_x - center_x
+        dy = arrow_y - center_y  # 🚨 记住：屏幕坐标系中，向下为正，向上为负
+
+        # 3. 祭出数学大招：计算出以“水平向右”为 0° 的原始弧度，并转成直观的角度
+        # math.atan2 接收的顺序是 (y, x)
+        raw_radian = math.atan2(dy, dx)
+        raw_angle = math.degrees(raw_radian)  # 此时范围在 -180° 到 180° 之间
+
+        # 4. 【核心转换】：把基准面扭转成“正上方为 0°，顺时针增加”
+        # raw_angle 加上 90 度，就能把 0° 从右边拉到顶端。
+        # 使用 % 360 运算可以把所有负数角度（比如左半边）优雅地修正到 0~360° 范围内。
+        game_angle = (raw_angle + 90) % 360
+
+        # 顺便四舍五入保留一位小数，看着舒服
+        return round(game_angle, 1)
+
+    def 滑动系数初始化():
+        d.swipe(int(设备宽度*0.5), int(设备高度*0.5), int(设备宽度 * 0.5)+30, int(设备高度*0.5), duration=0.18)
+    def 地标检测():
+        img = 缩放图片至基准尺寸(截图())
+        地标坐标=yolo检测(img, model=地标检测模型)
+        print(地标坐标)
+        return 地标坐标
+    def 视角校准(current_angle):
+        """根据计算出的游戏夹角，一次性滑屏对准地标方向."""
+        # ==== 🔑 核心参数配置（关键灵敏度系数） ====
+        # 这个系数代表：游戏内视角每转 1 度，屏幕上需要滑动多少像素。
+        # 2K 分辨率（2560）下，战双默认视角速度通常在 2.5 ~ 4.5 之间。
+        # 这是一个经验初始值，如果发现一次性转不够，就调大它；转过头了，就调小它。
+        滑动系数 = 3
+
+        # 滑动触控的安全 Y 轴高度（在屏幕中下方，避开技能栏和UI）
+        滑动y轴 = int(设备高度 * 0.45)  # 1440 * 0.45 ≈ 0
+
+        # 右半包屏的滑动物理基准中心（防止滑出屏幕边界）
+        滑动右边界 = int(设备宽度 * 0.72)  # 2560 * 0.72 ≈ 1840
+        滑动左边界 = int(设备宽度 * 0.2)  # 2560 * 0.72 ≈ 1840
+
+        # ==== 1. 计算偏离正前方的相对角度 (带有正负号) ====
+        # 将 0~360 映射到 -180 ~ 180
+        if current_angle > 180:
+            error_angle = current_angle - 360  # 左边，负数 (例如 270° 变成 -90°)
+        else:
+            error_angle = current_angle  # 右边，正数 (例如 90° 还是 90°)
+
+        # 死区控制：如果偏离小于 3 度，认为已经对准，不需要滑动
+        if abs(error_angle) < 3.0:
+            print(f"🎯 当前偏离仅 {error_angle}°，基本对准，无需修正视角。")
+            return True
+
+        # ==== 2. 计算需要滑动的绝对像素距离 ====
+        滑动距离 = int(abs(error_angle) * 滑动系数)
+
+        # 边界保护：单次滑动距离不要超过半个屏幕宽，防止死循环或拉断
+        单次最大滑动距离 = int(设备宽度 * 0.5)  # 640 像素
+        if 滑动距离 > 单次最大滑动距离:
+            滑动距离 = 单次最大滑动距离
+
+        # ==== 3. 根据正负号判定滑动方向并执行 ====
+        if error_angle > 0:
+            # 地标在右边 -> 视角需要右转 -> 鼠标/手指从左往右划
+            start_x = 滑动左边界
+            end_x = 滑动左边界+滑动距离
+            print(
+                f"🔄 地标偏右 {error_angle:.1f}° -> 向左滑屏 {滑动距离} 像素以右转视角"
+            )
+        else:
+            # 地标在左边 -> 视角需要左转 -> 鼠标/手指从右往左转
+            start_x = 滑动右边界 + 滑动距离
+            end_x = 滑动右边界
+            print(
+                f"🔄 地标偏左 {abs(error_angle):.1f}° -> 向右滑屏 {滑动距离} 像素以左转视角"
+            )
+
+        # ==== 4. 驱动 uiautomator2 执行一击必中 ====
+        # 🚨 注意：duration 很重要！转视角不能滑太快，太快了游戏引擎会掉帧导致转动距离缩水
+        # 推荐 0.15 秒 到 0.2 秒之间，既保证速度，又能让模拟器完美识别距离
+        d.swipe(start_x, 滑动y轴, end_x, 滑动y轴, duration=0.18)
+
+        return False
+    def 地标定位主函数():
+        地标坐标=地标检测()
+        if 地标坐标:
+            x1,y1,x2,y2=地标坐标[0]
+            中心坐标x = int((x1 + x2) / 2)
+            中心坐标y = int((y1 + y2) / 2)
+            夹角量=夹角计算(中心坐标x,中心坐标y)
+            视角校准(夹角量)
     def 区域截图(x1=None, y1=None, x2=None, y2=None):
         """
         指定区域截图
@@ -288,7 +387,7 @@ try:
 
         # 3. 使用模型分类
         # verbose=False 去掉控制台冗余输出
-        results = model_1(缩放后图片, verbose=False)
+        results = 分类模型(缩放后图片, verbose=False)
 
         # 分类结果解析
         probs = results[0].probs
@@ -574,6 +673,20 @@ try:
                     区域内随机坐标点击(x相对坐标(2294), x相对坐标(2418), y相对坐标(966), y相对坐标(1086))
                     time.sleep(1.5)
                     break
+                if hsv模板匹配('副本-剧情对话页跳过', config.副本_剧情对话页跳过hsv范围lower,
+                               config.副本_剧情对话页跳过hsv范围upper):
+                    print('检测到剧情对话页，正在退出寻路')
+                    break
+                if hsv模板匹配('副本-战斗结算', config.副本_战斗结算hsv范围lower, config.副本_战斗结算hsv范围upper):
+                    print('检测到战斗结算页，正在退出寻路')
+                    break
+                if 图像是否存在从配置文件中获取文件路径('副本-战斗结算', gray_mode=True):
+                    print('检测到意识重启页，正在退出寻路')
+                    break
+                血条像素值 = 怪物名检测()
+                if 血条像素值 > 500:
+                    print('检测到怪物名，正在退出寻路')
+                    break
                 time.sleep(0.005)
         finally:
             d.touch.up(x相对坐标(371), y相对坐标(848))
@@ -822,7 +935,7 @@ try:
         return False
 
 
-    def yolo检测(img, conf_threshold=0.5):
+    def yolo检测(img,model=None, conf_threshold=0.5):
         """
         执行单次检测并返回识别到的目标坐标
         :param conf_threshold: 置信度阈值
@@ -1472,7 +1585,7 @@ try:
         while not 共享变量.超时信号:
             闪避计时=time.time()
             print(f'当前已运行时间:{time.time() - start_time_1}')
-            if time.time() - start_time_1 > 480:
+            if time.time() - start_time_1 > 260:
                 共享变量.超时信号 = True
                 print('副本已超时，正在执行退出')
                 print('正在同步时间')
@@ -1673,4 +1786,28 @@ except Exception as e:
     traceback.print_exc()
     input("\n👉 按回车键退出程序...")
 if __name__ == '__main__':
-    print(加载配置文件())
+    # while True:
+    #     地标定位主函数()
+    #     time.sleep(2.5)
+    # 视角校准(82.4)
+    上一次夹角=None
+    while True:
+        m=地标检测()
+        center_x=None
+        center_y=None
+        if m:
+            mm=m[0]
+            x1,y1,x2,y2=mm
+            center_x=int((x1+x2)/2)
+            center_y=int((y1+y2)/2)
+            n=夹角计算(center_x,center_y)
+            if 上一次夹角:
+                夹角变化量=n-上一次夹角
+                滑动系数=30/夹角变化量
+                print(f'滑动系数：{滑动系数}')
+                上一次夹角=n
+                pass
+            else:
+                上一次夹角=n
+            滑动系数初始化()
+            print(n)
