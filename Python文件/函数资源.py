@@ -232,7 +232,13 @@ try:
         d.swipe(start_x, 滑动y轴, end_x, 滑动y轴, duration=0.18)
 
         return False
+    地标是否存在=False
     def 地标定位主函数():
+        """
+        检测画面中是否存在地标，如果存在，则会一次性对准方向，如果不存在，则无任何操作
+        :return: 视角对准时，返回TRUE，其余情况无返回值
+        """
+        global 地标是否存在
         地标坐标=地标检测()
         if 地标坐标:
             x1,y1,x2,y2=地标坐标[0]
@@ -240,6 +246,12 @@ try:
             中心坐标y = int((y1 + y2) / 2)
             夹角量=夹角计算(中心坐标x,中心坐标y)
             视角校准(夹角量)
+            print(f'【地标定位函数】视角已对准')
+            print(f'检测到地标，正在设置地标信号')
+            地标是否存在=True
+            return True
+
+
     def 区域截图(x1=None, y1=None, x2=None, y2=None):
         """
         指定区域截图
@@ -655,6 +667,7 @@ try:
             寻敌()
             time.sleep(5)
     def 非阻塞式前移摇杆(最大时长=1):
+        global 任意中断信号
         d.touch.down(x相对坐标(371), y相对坐标(1062))
         time.sleep(0.05)
         d.touch.move(x相对坐标(371), y相对坐标(848))
@@ -662,30 +675,44 @@ try:
         print('已开始移动，开始计时')
         try:
             while time.time()-start_time<最大时长:
+                if 任意中断信号:
+                    break
                 if hsv模板匹配('副本-战斗对话页', config.副本_战斗对话页hsv范围lower, config.副本_战斗对话页hsv范围upper):
                     区域内随机坐标点击(x相对坐标(1567), x相对坐标(1721), y相对坐标(1200), y相对坐标(1247))
                     time.sleep(0.1)
                     区域内随机坐标点击(x相对坐标(2206), x相对坐标(2312), y相对坐标(1071), y相对坐标(1183))
                     print('检测到触发战斗对话页，寻路结束')
+                    任意中断信号 = True
+
                     break
                 if hsv模板匹配('副本-战斗交互', config.副本_战斗交互hsv范围lower, config.副本_战斗交互hsv范围upper):
                     print('检测到交互按钮，默认已实现寻路效果')
                     区域内随机坐标点击(x相对坐标(2294), x相对坐标(2418), y相对坐标(966), y相对坐标(1086))
                     time.sleep(1.5)
+                    任意中断信号 = True
+
                     break
                 if hsv模板匹配('副本-剧情对话页跳过', config.副本_剧情对话页跳过hsv范围lower,
                                config.副本_剧情对话页跳过hsv范围upper):
                     print('检测到剧情对话页，正在退出寻路')
+                    任意中断信号 = True
+
                     break
                 if hsv模板匹配('副本-战斗结算', config.副本_战斗结算hsv范围lower, config.副本_战斗结算hsv范围upper):
                     print('检测到战斗结算页，正在退出寻路')
+                    任意中断信号 = True
+
                     break
                 if 图像是否存在从配置文件中获取文件路径('副本-战斗结算', gray_mode=True):
                     print('检测到意识重启页，正在退出寻路')
+                    任意中断信号 = True
+
                     break
                 血条像素值 = 怪物名检测()
                 if 血条像素值 > 500:
                     print('检测到怪物名，正在退出寻路')
+                    任意中断信号 = True
+
                     break
                 time.sleep(0.005)
         finally:
@@ -696,7 +723,7 @@ try:
     防遮挡 = 0
     def 终点标识符检测():
         """
-        检测画面是否存在终点标识符，如果存在则会将视角对准，如果不存在则会转动视角
+        检测画面是否存在终点标识符，如果存在，则会微调一次视角，如果不存在，则跳过任何操作。视角对准后，返回true
         :return: 对准标识符时，返回Ture
         """
         global 终点标识符检测结果全局,防遮挡
@@ -733,50 +760,67 @@ try:
                 防遮挡=0
                 print('检测到标识符出现后又消失，默认已对准')
                 return True
-            print('未检测到终点标识符，正在滑动视角')
-            随机小幅度划屏((x相对坐标(1278), y相对坐标(692)),'left',x相对坐标(100))
-        # elif 连续性过滤 is None:
-        #     防遮挡+=1
-        #     print('连续性检测结果为空')
-
+            print('未检测到终点标识符')
+    任意中断信号=False#用于同步不同作用域的退出信号
     def 寻路主函数():
-        global 终点标识符检测结果全局
+        global 终点标识符检测结果全局,地标是否存在,任意中断信号
         """
         重复检测画面，如果检测到标识符会执行移动，如果没有会重试，最大重试次数为20次
         :return:
         """
         for i in range(1,21):
+            if 任意中断信号:
+                break
             if hsv模板匹配('副本-战斗对话页', config.副本_战斗对话页hsv范围lower, config.副本_战斗对话页hsv范围upper):
                 区域内随机坐标点击(x相对坐标(1567), x相对坐标(1721), y相对坐标(1200), y相对坐标(1247))
                 time.sleep(0.1)
                 区域内随机坐标点击(x相对坐标(2206), x相对坐标(2312), y相对坐标(1071), y相对坐标(1183))
                 print('检测到触发战斗对话页，寻路结束')
+                任意中断信号=True
                 break
             if hsv模板匹配('副本-战斗交互',config.副本_战斗交互hsv范围lower,config.副本_战斗交互hsv范围upper):
                 print('检测到交互按钮，默认已实现寻路效果')
                 区域内随机坐标点击(x相对坐标(2294),x相对坐标(2418),y相对坐标(966),y相对坐标(1086))
                 time.sleep(1.5)
+                任意中断信号 = True
                 break
             if hsv模板匹配('副本-剧情对话页跳过', config.副本_剧情对话页跳过hsv范围lower, config.副本_剧情对话页跳过hsv范围upper):
                 print('检测到剧情对话页，正在退出寻路')
+                任意中断信号 = True
+
                 break
             if hsv模板匹配('副本-战斗结算', config.副本_战斗结算hsv范围lower, config.副本_战斗结算hsv范围upper):
                 print('检测到战斗结算页，正在退出寻路')
+                任意中断信号 = True
+
                 break
             if 图像是否存在从配置文件中获取文件路径('副本-战斗结算',gray_mode=True):
                 print('检测到意识重启页，正在退出寻路')
+                任意中断信号 = True
+
                 break
             血条像素值=怪物名检测()
             if 血条像素值>500:
                 print('检测到怪物名，正在退出寻路')
+                任意中断信号 = True
+
                 break
             if 终点标识符检测():
                 防卡墙移动()
                 break
+            else:
+                if 地标定位主函数():
+                    防卡墙移动()
+                    break
+                print('未检测到终点标识符，也未检测到地标，正在转动视角')
+                随机小幅度划屏((x相对坐标(1278), y相对坐标(692)), 'left', x相对坐标(100))
+
         else:
             防卡墙移动()
-        print('正在初始化终点标识符全局变量')
+        print('正在初始化终点标识符和地标和中断信号全局变量')
+        地标是否存在=False
         终点标识符检测结果全局=False
+        任意中断信号=False
     def 卡墙时操作():
         随机小幅度划屏((x相对坐标(1278), y相对坐标(692)), 'right', x相对坐标(200))
         非阻塞式前移摇杆(1)
@@ -786,42 +830,69 @@ try:
                 if 终点标识符检测():
                     print('已重新校验方向')
                     break
+                else:
+                    随机小幅度划屏((x相对坐标(1278), y相对坐标(692)), 'left', x相对坐标(100))
+
             else:
                 print('已超过最大重试次数，仍未检测到标识符')
+        elif 地标是否存在:
+            print('卡墙，正在二次校验地标方向')
+            for i in range(1, 21):
+                if 地标定位主函数():
+                    print('已重新校验方向')
+                    break
+                else:
+                    随机小幅度划屏((x相对坐标(1278), y相对坐标(692)), 'left', x相对坐标(100))
+
+
 
 
 
     def 防卡墙移动():
+        global 任意中断信号
         移动次数=0
         最大重试次数=10
         while 移动次数<=7 and 最大重试次数>0:
+            if 任意中断信号:
+                break
             if hsv模板匹配('副本-战斗对话页',config.副本_战斗对话页hsv范围lower,config.副本_战斗对话页hsv范围upper):
                 区域内随机坐标点击(x相对坐标(1567), x相对坐标(1721), y相对坐标(1200), y相对坐标(1247))
                 time.sleep(0.1)
                 区域内随机坐标点击(x相对坐标(2206), x相对坐标(2312), y相对坐标(1071), y相对坐标(1183))
                 print('检测到触发战斗对话页，寻路结束')
+                任意中断信号 = True
 
                 break
             if hsv模板匹配('副本-战斗交互', config.副本_战斗交互hsv范围lower, config.副本_战斗交互hsv范围upper):
                 print('检测到交互按钮，默认已实现寻路效果')
                 区域内随机坐标点击(x相对坐标(2294), x相对坐标(2418), y相对坐标(966), y相对坐标(1086))
                 time.sleep(1.5)
+                任意中断信号 = True
+
                 break
             if hsv模板匹配('副本-剧情对话页跳过', config.副本_剧情对话页跳过hsv范围lower,
                            config.副本_剧情对话页跳过hsv范围upper):
                 print('检测到剧情对话页，正在退出寻路')
+                任意中断信号 = True
+
                 break
             if hsv模板匹配('副本-战斗结算', config.副本_战斗结算hsv范围lower, config.副本_战斗结算hsv范围upper):
                 print('检测到战斗结算页，正在退出寻路')
+                任意中断信号 = True
+
                 break
             if 图像是否存在从配置文件中获取文件路径('副本-战斗结算', gray_mode=True):
                 print('检测到意识重启页，正在退出寻路')
+                任意中断信号 = True
+
                 break
             血条像素值 = 怪物名检测()
             if 血条像素值 > 500:
                 print('检测到怪物名，正在退出寻路')
+                任意中断信号 = True
+
                 break
-            if 卡墙检测():
+            if 移动卡墙检测():
                 卡墙时操作()
                 print('已执行卡墙时操作')
                 最大重试次数-=1
@@ -832,12 +903,22 @@ try:
                         if 终点标识符检测():
                             print('已重新校验方向')
                             break
+                        else:
+                            随机小幅度划屏((x相对坐标(1278), y相对坐标(692)), 'left', x相对坐标(100))
+                elif 地标是否存在:
+                    for i in range(1, 21):
+                        if 地标定位主函数():
+                            print('已重新校验方向')
+                            break
+                        else:
+                            随机小幅度划屏((x相对坐标(1278), y相对坐标(692)), 'left', x相对坐标(100))
+
                 移动次数+=1
         print('已退出移动')
 
 
-    def 卡墙检测(x1=657, y1=190, x2=2158, y2=494, threshold_ratio=0.1):
-        """通过对比指定区域(x1, y1, x2, y2)内的像素流变，检测角色是否卡墙
+    def 移动卡墙检测(x1=657, y1=190, x2=2158, y2=494, threshold_ratio=0.1):
+        """通过前后两帧的像素差异，判断移动是否卡墙
 
         :param x1: 裁剪区域左上角 X 坐标
         :param y1: 裁剪区域左上角 Y 坐标
@@ -1786,28 +1867,6 @@ except Exception as e:
     traceback.print_exc()
     input("\n👉 按回车键退出程序...")
 if __name__ == '__main__':
-    # while True:
-    #     地标定位主函数()
-    #     time.sleep(2.5)
-    # 视角校准(82.4)
-    上一次夹角=None
-    while True:
-        m=地标检测()
-        center_x=None
-        center_y=None
-        if m:
-            mm=m[0]
-            x1,y1,x2,y2=mm
-            center_x=int((x1+x2)/2)
-            center_y=int((y1+y2)/2)
-            n=夹角计算(center_x,center_y)
-            if 上一次夹角:
-                夹角变化量=n-上一次夹角
-                滑动系数=30/夹角变化量
-                print(f'滑动系数：{滑动系数}')
-                上一次夹角=n
-                pass
-            else:
-                上一次夹角=n
-            滑动系数初始化()
-            print(n)
+    寻路主函数()
+    # if hsv模板匹配('副本-战斗交互', config.副本_战斗交互hsv范围lower, config.副本_战斗交互hsv范围upper):
+    #     print('检测到交互按钮，默认已实现寻路效果')
