@@ -16,7 +16,7 @@ print(项目根目录路径)
 json配置文件路径=os.path.join(项目根目录路径, "ziyuanwenjian", "config.json")
 yolo模型路径={"分类模型": os.path.join(项目根目录路径, "model", '分类模型.pt'),
             "目标检测模型": os.path.join(项目根目录路径, "model", '目标检测模型.pt'),
-            "地标检测模型": os.path.join(项目根目录路径, "model", '1.pt'),
+            "地标检测模型": os.path.join(项目根目录路径, "model", '地标检测模型.pt'),
 
 }
 # print(yolo模型路径)
@@ -73,3 +73,17 @@ yolo模型路径={"分类模型": os.path.join(项目根目录路径, "model", '
 副本_剧情对话页跳过hsv范围upper=[179,27,255]
 副本_战斗结算hsv范围lower = [0, 0, 251]
 副本_战斗结算hsv范围upper = [179, 27, 255]
+hsv配置字典={
+    "副本_战斗交互按钮":{
+        "lower":[0,0,171],
+        "upper":[179,13,255],
+    }
+}
+roi配置字典={
+    "副本_战斗交互按钮":{
+        "x_min": 0.561719,
+        "y_min": 0.521528,
+        "x_max": 0.994922,
+        "y_max": 0.963194
+    }
+}

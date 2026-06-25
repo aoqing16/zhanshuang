@@ -12,7 +12,7 @@ def 副本首页():
         return
     while True:
         img = 缩放图片至基准尺寸(截图())
-        n = yolo检测(img,model=副本首页模型)
+        n = yolo检测(img,model=副本首页模型)[0]
         m = 获取最右侧未通关关卡反向排除版(img, n)
         print(f'未通过关卡中心坐标{m}')
         if count<=2:

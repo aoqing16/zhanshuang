@@ -110,7 +110,7 @@ try:
     if hasattr(sys, '_MEIPASS'):
         d = 自动连接战双模拟器()
     else:
-        d=u2.connect('127.0.0.1:16384')
+        d=u2.connect('127.0.0.1:5555')
     if d:
         print('已成功连接到模拟器，正在启动脚本')
     else:
@@ -119,6 +119,65 @@ try:
     def 截图():
         img = d.screenshot(format='opencv')
         return img
+
+
+    def 图像处理(img, 目标名称, hsv_dict=config.hsv配置字典, roi_dict=config.roi配置字典):
+        """
+        根据传入的双配置字典，动态提取指定目标的归一化坐标进行裁剪，并应用 HSV 过滤。
+
+        :param img: 支持传入本地图片路径(str)，或已读取的 OpenCV 图像矩阵(np.ndarray)
+        :param 目标名称: 字符串，例如 "副本_战斗交互按钮"
+        :param hsv_dict: 你的 hsv配置字典
+        :param roi_dict: 你的 roi配置字典
+        :return: 处理后的 BGR 图像矩阵（若裁剪失败则返回空矩阵）
+        """
+        # 1. 自动识别输入类型并读取原图
+        if isinstance(img, str):
+            src_img = cv2.imdecode(np.fromfile(img, dtype=np.uint8), cv2.IMREAD_COLOR)
+            if src_img is None:
+                raise FileNotFoundError(f"❌ 无法读取指定的图片路径: {img}")
+        elif isinstance(img, np.ndarray):
+            src_img = img.copy()
+        else:
+            raise TypeError("❌ 传入的 img 参数必须是图片路径(str)或OpenCV矩阵(np.ndarray)！")
+
+        # 获取原图的真实物理分辨率（用来反算归一化坐标）
+        img_h, img_w, _ = src_img.shape
+
+        # 2. 📜 从 roi配置字典 中提取目标并反算像素坐标
+        if 目标名称 not in roi_dict:
+            raise KeyError(f"❌ 在 roi配置字典 中找不到对应的目标: {目标名称}")
+
+        crop_conf = roi_dict[目标名称]
+        x_min = int(crop_conf["x_min"] * img_w)
+        y_min = int(crop_conf["y_min"] * img_h)
+        x_max = int(crop_conf["x_max"] * img_w)
+        y_max = int(crop_conf["y_max"] * img_h)
+
+        # 🚨 OpenCV 切片：严格遵循 [Y_min:Y_max, X_min:X_max] 规则
+        cropped_img = src_img[y_min:y_max, x_min:x_max]
+
+        # 边界安全检查
+        if cropped_img.size == 0:
+            raise ValueError(f"❌ 裁剪区域越界！计算出的像素坐标为: [({x_min},{y_min}), ({x_max},{y_max})]")
+
+        # 3. 转换色彩空间 BGR -> HSV
+        hsv_img = cv2.cvtColor(cropped_img, cv2.COLOR_BGR2HSV)
+
+        # 4. 📜 从 hsv配置字典 中提取对应的上下限阈值
+        if 目标名称 not in hsv_dict:
+            raise KeyError(f"❌ 在 hsv配置字典 中找不到对应的目标: {目标名称}")
+
+        hsv_conf = hsv_dict[目标名称]
+        lower_bound = np.array(hsv_conf["lower"], dtype=np.uint8)
+        upper_bound = np.array(hsv_conf["upper"], dtype=np.uint8)
+
+        # 5. 生成二值化掩膜并将非目标颜色刷成纯黑
+        color_mask = cv2.inRange(hsv_img, lower_bound, upper_bound)
+        filtered_result = cv2.bitwise_and(cropped_img, cropped_img, mask=color_mask)
+
+        return filtered_result
+
     设备宽度, 设备高度 = d.window_size()
     print(f'设备宽度：{设备宽度},设备高度{设备高度}')
     x缩放系数 = float(设备宽度 / 2560)
@@ -171,8 +230,7 @@ try:
     def 滑动系数初始化():
         d.swipe(int(设备宽度*0.5), int(设备高度*0.5), int(设备宽度 * 0.5)+30, int(设备高度*0.5), duration=0.18)
     def 地标检测():
-        img = 缩放图片至基准尺寸(截图())
-        地标坐标=yolo检测(img, model=地标检测模型)
+        地标坐标= yolo检测扩展版(model=地标检测模型, 检测标签="地标")
         print(地标坐标)
         return 地标坐标
     def 视角校准(current_angle):
@@ -241,7 +299,7 @@ try:
         global 地标是否存在
         地标坐标=地标检测()
         if 地标坐标:
-            x1,y1,x2,y2=地标坐标[0]
+            x1,y1,x2,y2=地标坐标
             中心坐标x = int((x1 + x2) / 2)
             中心坐标y = int((y1 + y2) / 2)
             夹角量=夹角计算(中心坐标x,中心坐标y)
@@ -727,7 +785,18 @@ try:
         :return: 对准标识符时，返回Ture
         """
         global 终点标识符检测结果全局,防遮挡
-        终点标识符检测结果 = hsv模板匹配获取坐标('终点标识符', config.终点标识符hsv范围lower, config.终点标识符hsv范围upper,0.35)
+        终标检测=yolo检测扩展版(model=地标检测模型,检测标签="终点标识符")
+
+        中心点坐标=None
+        if 终标检测 is None:
+            pass
+        else:
+
+            x1, y1, x2, y2 = 终标检测
+            中心坐标x = int((x1 + x2) / 2)
+            中心坐标y = int((y1 + y2) / 2)
+            中心点坐标=(中心坐标x,中心坐标y)
+        终点标识符检测结果 = 中心点坐标
         布尔值=False
         if 终点标识符检测结果:
             布尔值=True
@@ -1016,6 +1085,56 @@ try:
         return False
 
 
+    def yolo检测扩展版(model=None, 置信度=0.5, 检测标签=None):
+        """从检测结果中提取指定标签的坐标 [x1, y1, x2, y2]
+
+        如果未检测到该标签则返回 None
+        """
+        print(
+            f"\n[YOLO] 🔍 开启新一轮检测 | 目标标签:【{检测标签}】| 设定置信度阈值: {置信度}"
+        )
+
+        # 1. 图像获取与预测
+        img = 缩放图片至基准尺寸(截图())
+        results = model(img, conf=置信度, verbose=False)
+        res = results[0]
+
+        # 获取全图所有框的数量
+        total_boxes = len(res.boxes)
+        if total_boxes == 0:
+            print(f"[YOLO] ❌ 画面空空如也，未检测到任何满足置信度 >= {置信度} 的目标。")
+            return None
+
+        print(
+            f"[YOLO] 📊 画面扫描完毕，当前共圈出 {total_boxes} 个潜在目标（已过滤低置信度），开始匹配标签..."
+        )
+
+        # 2. 遍历所有检测到的物体
+        for idx, box in enumerate(res.boxes):
+            cls_id = int(box.cls[0].item())
+            label_name = res.names[cls_id]
+            conf_value = float(box.conf[0].item())
+
+            print(
+                f"   └── 目标 #{idx + 1}: 标签=【{label_name}】| 置信度={conf_value:.4f}"
+            )
+
+            # 3. 核心过滤
+            if label_name == 检测标签:
+                x1, y1, x2, y2 = box.xyxy[0].tolist()
+                print(
+                    f"[YOLO] 🎯 完美匹配！成功锁定目标【{检测标签}】(置信度:{conf_value:.2f})"
+                )
+                print(
+                    f"       坐标框为: [{x1:.2f}, {y1:.2f}, {x2:.2f}, {y2:.2f}]"
+                )
+                return [x1, y1, x2, y2]
+
+        # 4. 如果把全图的框都看完了，也没有找到你要的标签
+        print(
+            f"[YOLO] ⚠️ 匹配失败：虽然全图抓到了 {total_boxes} 个东西，但里面没有一个叫【{检测标签}】的。"
+        )
+        return None
     def yolo检测(img,model=None, conf_threshold=0.5):
         """
         执行单次检测并返回识别到的目标坐标
@@ -1028,15 +1147,12 @@ try:
 
         # 2. 推理
         results = model(img, conf=conf_threshold, verbose=False)
-
+        识别标签名 = [results[0].names[int(cls)] for cls in results[0].boxes.cls]
+        print(f'yolo检测结果【{识别标签名}】')
         # 3. 提取坐标 (boxes.xyxy 返回的是 Tensor)
         boxes = results[0].boxes.xyxy.cpu().numpy().tolist()
 
-        # 4. 可视化（返回绘制好的图片，用于调试）
-        # annotated_frame = results[0].plot()
-        # cv2.imshow("AI Monitor - Detection", annotated_frame)
-
-        return boxes
+        return boxes,识别标签名
     # 配置字典（保持不变，方便后续增加新状态）
     STATUS_CONFIG = {
         '青绿标识符': {
@@ -1867,6 +1983,8 @@ except Exception as e:
     traceback.print_exc()
     input("\n👉 按回车键退出程序...")
 if __name__ == '__main__':
-    寻路主函数()
-    # if hsv模板匹配('副本-战斗交互', config.副本_战斗交互hsv范围lower, config.副本_战斗交互hsv范围upper):
-    #     print('检测到交互按钮，默认已实现寻路效果')
+    img=截图()
+    img_result=图像处理(img,"副本_战斗交互按钮")
+    cv2.imshow('图像处理结果', img_result)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
