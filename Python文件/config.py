@@ -16,7 +16,7 @@ print(项目根目录路径)
 json配置文件路径=os.path.join(项目根目录路径, "ziyuanwenjian", "config.json")
 yolo模型路径={"分类模型": os.path.join(项目根目录路径, "model", '分类模型.pt'),
             "目标检测模型": os.path.join(项目根目录路径, "model", '目标检测模型.pt'),
-            "地标检测模型": os.path.join(项目根目录路径, "model", '地标检测模型.pt'),
+            "地标检测模型": os.path.join(项目根目录路径, "model", 'best.pt'),
 
 }
 # print(yolo模型路径)

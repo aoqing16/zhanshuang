@@ -329,7 +329,7 @@ try:
             img = 缩放后图片[int(y1):int(y2), int(x1):int(x2)]
 
         return img
-    def 图像是否存在从配置文件中获取文件路径(key, threshold=0.7, gray_mode=False):
+    def 图像是否存在从配置文件中获取文件路径(key, threshold=0.7, gray_mode=False,img_a=None):
         """
         检测图像是否存在
         :param key: 模板在配置文件中图片标识符清单字典中的键名
@@ -348,7 +348,10 @@ try:
             return False
 
         # 1.1 获取并处理屏幕截图
-        img_color = 缩放图片至基准尺寸(截图())
+        if img_a is None:
+            img_color = 缩放图片至基准尺寸(截图())
+        else:
+            img_color = img_a
         if gray_mode:
             img_source = cv2.cvtColor(img_color, cv2.COLOR_BGR2GRAY)
         else:
@@ -528,7 +531,7 @@ try:
         # print(f'yolo模型识别结果：【{ll[0]}】    置信度：{ll[1]}')
         过滤结果=yolo过滤器(ll)
         return 过滤结果
-    def 怪物名检测(roi=config.怪物名roi, pixel_threshold=40):
+    def 怪物名检测(roi=config.怪物名roi, pixel_threshold=40,img_a=None):
         """
         检测屏幕指定 ROI 区域内符合 HSV 范围的像素数量
         :param img: 传入的当前最新 OpenCV 格式截图 (BGR)
@@ -536,7 +539,10 @@ try:
         :param pixel_threshold: 触发判定的像素点数门槛（默认 50）
         :return: True (达到阈值) 或 False (未达到)
         """
-        img = 缩放图片至基准尺寸(截图())
+        if img_a is None:
+            img = 缩放图片至基准尺寸(截图())
+        else:
+            img = img_a
         if img is None:
             print("❌ [血条检测] 传入的图片为空！")
             return False
@@ -732,46 +738,55 @@ try:
         start_time=time.time()
         print('已开始移动，开始计时')
         try:
+            轮次计数=0
             while time.time()-start_time<最大时长:
+                start=time.time()
+                img = 缩放图片至基准尺寸(截图())
+                轮次计数+=1
                 if 任意中断信号:
                     break
-                if hsv模板匹配('副本-战斗对话页', config.副本_战斗对话页hsv范围lower, config.副本_战斗对话页hsv范围upper):
-                    区域内随机坐标点击(x相对坐标(1567), x相对坐标(1721), y相对坐标(1200), y相对坐标(1247))
-                    time.sleep(0.1)
-                    区域内随机坐标点击(x相对坐标(2206), x相对坐标(2312), y相对坐标(1071), y相对坐标(1183))
-                    print('检测到触发战斗对话页，寻路结束')
-                    任意中断信号 = True
-
-                    break
-                if hsv模板匹配('副本-战斗交互', config.副本_战斗交互hsv范围lower, config.副本_战斗交互hsv范围upper):
+                img_yolo = 图像处理(img, "副本_战斗交互按钮")
+                if yolo检测扩展版(model=地标检测模型, 检测标签="副本—战斗交互按钮", img_a=img_yolo):
                     print('检测到交互按钮，默认已实现寻路效果')
                     区域内随机坐标点击(x相对坐标(2294), x相对坐标(2418), y相对坐标(966), y相对坐标(1086))
                     time.sleep(1.5)
                     任意中断信号 = True
-
                     break
-                if hsv模板匹配('副本-剧情对话页跳过', config.副本_剧情对话页跳过hsv范围lower,
-                               config.副本_剧情对话页跳过hsv范围upper):
-                    print('检测到剧情对话页，正在退出寻路')
-                    任意中断信号 = True
+                if 轮次计数 % 10==0:
+                    if hsv模板匹配('副本-战斗对话页', config.副本_战斗对话页hsv范围lower, config.副本_战斗对话页hsv范围upper, img_a=img):
+                        区域内随机坐标点击(x相对坐标(1567), x相对坐标(1721), y相对坐标(1200), y相对坐标(1247))
+                        time.sleep(0.1)
+                        区域内随机坐标点击(x相对坐标(2206), x相对坐标(2312), y相对坐标(1071), y相对坐标(1183))
+                        print('检测到触发战斗对话页，寻路结束')
+                        任意中断信号 = True
 
-                    break
-                if hsv模板匹配('副本-战斗结算', config.副本_战斗结算hsv范围lower, config.副本_战斗结算hsv范围upper):
-                    print('检测到战斗结算页，正在退出寻路')
-                    任意中断信号 = True
+                        break
 
-                    break
-                if 图像是否存在从配置文件中获取文件路径('副本-战斗结算', gray_mode=True):
-                    print('检测到意识重启页，正在退出寻路')
-                    任意中断信号 = True
 
-                    break
-                血条像素值 = 怪物名检测()
-                if 血条像素值 > 500:
-                    print('检测到怪物名，正在退出寻路')
-                    任意中断信号 = True
+                    if hsv模板匹配('副本-剧情对话页跳过', config.副本_剧情对话页跳过hsv范围lower,
+                                   config.副本_剧情对话页跳过hsv范围upper,img_a=img):
+                        print('检测到剧情对话页，正在退出寻路')
+                        任意中断信号 = True
 
-                    break
+                        break
+                    if hsv模板匹配('副本-战斗结算', config.副本_战斗结算hsv范围lower, config.副本_战斗结算hsv范围upper,img_a=img):
+                        print('检测到战斗结算页，正在退出寻路')
+                        任意中断信号 = True
+
+                        break
+                    if 图像是否存在从配置文件中获取文件路径('副本-战斗结算', gray_mode=True,img_a=img):
+                        print('检测到意识重启页，正在退出寻路')
+                        任意中断信号 = True
+
+                        break
+                if 轮次计数 % 5==0:
+                    血条像素值 = 怪物名检测(img_a=img)
+                    if 血条像素值 > 500:
+                        print('检测到怪物名，正在退出寻路')
+                        任意中断信号 = True
+
+                        break
+                print(f'跑完一轮检测耗时：{time.time() - start}')
                 time.sleep(0.005)
         finally:
             d.touch.up(x相对坐标(371), y相对坐标(848))
@@ -838,38 +853,45 @@ try:
         :return:
         """
         for i in range(1,21):
+            img = 缩放图片至基准尺寸(截图())
             if 任意中断信号:
                 break
-            if hsv模板匹配('副本-战斗对话页', config.副本_战斗对话页hsv范围lower, config.副本_战斗对话页hsv范围upper):
+            if hsv模板匹配('副本-战斗对话页', config.副本_战斗对话页hsv范围lower, config.副本_战斗对话页hsv范围upper,
+                           img_a=img):
                 区域内随机坐标点击(x相对坐标(1567), x相对坐标(1721), y相对坐标(1200), y相对坐标(1247))
                 time.sleep(0.1)
                 区域内随机坐标点击(x相对坐标(2206), x相对坐标(2312), y相对坐标(1071), y相对坐标(1183))
                 print('检测到触发战斗对话页，寻路结束')
-                任意中断信号=True
+                任意中断信号 = True
+
                 break
-            if hsv模板匹配('副本-战斗交互',config.副本_战斗交互hsv范围lower,config.副本_战斗交互hsv范围upper):
+            img_yolo = 图像处理(img, "副本_战斗交互按钮")
+            if yolo检测扩展版(model=地标检测模型, 检测标签="副本—战斗交互按钮", img_a=img_yolo):
                 print('检测到交互按钮，默认已实现寻路效果')
-                区域内随机坐标点击(x相对坐标(2294),x相对坐标(2418),y相对坐标(966),y相对坐标(1086))
+                区域内随机坐标点击(x相对坐标(2294), x相对坐标(2418), y相对坐标(966), y相对坐标(1086))
                 time.sleep(1.5)
                 任意中断信号 = True
                 break
-            if hsv模板匹配('副本-剧情对话页跳过', config.副本_剧情对话页跳过hsv范围lower, config.副本_剧情对话页跳过hsv范围upper):
+
+            if hsv模板匹配('副本-剧情对话页跳过', config.副本_剧情对话页跳过hsv范围lower,
+                           config.副本_剧情对话页跳过hsv范围upper, img_a=img):
                 print('检测到剧情对话页，正在退出寻路')
                 任意中断信号 = True
 
                 break
-            if hsv模板匹配('副本-战斗结算', config.副本_战斗结算hsv范围lower, config.副本_战斗结算hsv范围upper):
+            if hsv模板匹配('副本-战斗结算', config.副本_战斗结算hsv范围lower, config.副本_战斗结算hsv范围upper,
+                           img_a=img):
                 print('检测到战斗结算页，正在退出寻路')
                 任意中断信号 = True
 
                 break
-            if 图像是否存在从配置文件中获取文件路径('副本-战斗结算',gray_mode=True):
+            if 图像是否存在从配置文件中获取文件路径('副本-战斗结算', gray_mode=True, img_a=img):
                 print('检测到意识重启页，正在退出寻路')
                 任意中断信号 = True
 
                 break
-            血条像素值=怪物名检测()
-            if 血条像素值>500:
+            血条像素值 = 怪物名检测(img_a=img)
+            if 血条像素值 > 500:
                 print('检测到怪物名，正在退出寻路')
                 任意中断信号 = True
 
@@ -922,9 +944,11 @@ try:
         移动次数=0
         最大重试次数=10
         while 移动次数<=7 and 最大重试次数>0:
+            img = 缩放图片至基准尺寸(截图())
             if 任意中断信号:
                 break
-            if hsv模板匹配('副本-战斗对话页',config.副本_战斗对话页hsv范围lower,config.副本_战斗对话页hsv范围upper):
+            if hsv模板匹配('副本-战斗对话页', config.副本_战斗对话页hsv范围lower, config.副本_战斗对话页hsv范围upper,
+                           img_a=img):
                 区域内随机坐标点击(x相对坐标(1567), x相对坐标(1721), y相对坐标(1200), y相对坐标(1247))
                 time.sleep(0.1)
                 区域内随机坐标点击(x相对坐标(2206), x相对坐标(2312), y相对坐标(1071), y相对坐标(1183))
@@ -932,30 +956,32 @@ try:
                 任意中断信号 = True
 
                 break
-            if hsv模板匹配('副本-战斗交互', config.副本_战斗交互hsv范围lower, config.副本_战斗交互hsv范围upper):
+            img_yolo = 图像处理(img, "副本_战斗交互按钮")
+            if yolo检测扩展版(model=地标检测模型, 检测标签="副本—战斗交互按钮", img_a=img_yolo):
                 print('检测到交互按钮，默认已实现寻路效果')
                 区域内随机坐标点击(x相对坐标(2294), x相对坐标(2418), y相对坐标(966), y相对坐标(1086))
                 time.sleep(1.5)
                 任意中断信号 = True
-
                 break
+
             if hsv模板匹配('副本-剧情对话页跳过', config.副本_剧情对话页跳过hsv范围lower,
-                           config.副本_剧情对话页跳过hsv范围upper):
+                           config.副本_剧情对话页跳过hsv范围upper, img_a=img):
                 print('检测到剧情对话页，正在退出寻路')
                 任意中断信号 = True
 
                 break
-            if hsv模板匹配('副本-战斗结算', config.副本_战斗结算hsv范围lower, config.副本_战斗结算hsv范围upper):
+            if hsv模板匹配('副本-战斗结算', config.副本_战斗结算hsv范围lower, config.副本_战斗结算hsv范围upper,
+                           img_a=img):
                 print('检测到战斗结算页，正在退出寻路')
                 任意中断信号 = True
 
                 break
-            if 图像是否存在从配置文件中获取文件路径('副本-战斗结算', gray_mode=True):
+            if 图像是否存在从配置文件中获取文件路径('副本-战斗结算', gray_mode=True, img_a=img):
                 print('检测到意识重启页，正在退出寻路')
                 任意中断信号 = True
 
                 break
-            血条像素值 = 怪物名检测()
+            血条像素值 = 怪物名检测(img_a=img)
             if 血条像素值 > 500:
                 print('检测到怪物名，正在退出寻路')
                 任意中断信号 = True
@@ -1085,17 +1111,24 @@ try:
         return False
 
 
-    def yolo检测扩展版(model=None, 置信度=0.5, 检测标签=None):
+    def yolo检测扩展版(img_a=None,model=None, 置信度=0.5, 检测标签=None):
         """从检测结果中提取指定标签的坐标 [x1, y1, x2, y2]
 
         如果未检测到该标签则返回 None
+        img_a: 可选参数，传入的图像，如果为 None 则会自动截图
+        model: YOLO 模型对象
+        置信度: 置信度阈值
+        检测标签: 需要匹配的目标标签名称
         """
         print(
             f"\n[YOLO] 🔍 开启新一轮检测 | 目标标签:【{检测标签}】| 设定置信度阈值: {置信度}"
         )
 
         # 1. 图像获取与预测
-        img = 缩放图片至基准尺寸(截图())
+        if img_a is None:
+            img = 截图()
+        else:
+            img=img_a
         results = model(img, conf=置信度, verbose=False)
         res = results[0]
 
@@ -1226,9 +1259,10 @@ try:
             return (center_x, center_y)
 
         return False
-    def hsv模板匹配(key, hsv_lower, hsv_upper, threshold=0.7):
+    def hsv模板匹配(key, hsv_lower, hsv_upper, threshold=0.7,img_a=None):
         """
         复合检测函数：先 HSV 掩膜过滤，再进行模板匹配
+        :param img_a:
         :param key: 模板图片键名
         :param hsv_lower: HSV下限
         :param hsv_upper: HSV上限
@@ -1246,7 +1280,10 @@ try:
         template_gray = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
 
         # 2. 获取实时画面
-        img = 缩放图片至基准尺寸(截图())
+        if img_a is None:
+            img = 缩放图片至基准尺寸(截图())
+        else:
+            img = img_a
         if img is None:
             return False
 
@@ -1983,8 +2020,42 @@ except Exception as e:
     traceback.print_exc()
     input("\n👉 按回车键退出程序...")
 if __name__ == '__main__':
-    img=截图()
-    img_result=图像处理(img,"副本_战斗交互按钮")
-    cv2.imshow('图像处理结果', img_result)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    寻路主函数()
+    # start = time.time()
+    # img = 缩放图片至基准尺寸(截图())
+    # if 任意中断信号:
+    #     pass
+    # if hsv模板匹配('副本-战斗对话页', config.副本_战斗对话页hsv范围lower, config.副本_战斗对话页hsv范围upper,
+    #                img_a=img):
+    #     区域内随机坐标点击(x相对坐标(1567), x相对坐标(1721), y相对坐标(1200), y相对坐标(1247))
+    #     time.sleep(0.1)
+    #     区域内随机坐标点击(x相对坐标(2206), x相对坐标(2312), y相对坐标(1071), y相对坐标(1183))
+    #     print('检测到触发战斗对话页，寻路结束')
+    #     任意中断信号 = True
+    #
+    # img_yolo = 图像处理(img, "副本_战斗交互按钮")
+    # if yolo检测扩展版(model=地标检测模型, 检测标签="副本—战斗交互按钮", img_a=img_yolo):
+    #     print('检测到交互按钮，默认已实现寻路效果')
+    #     区域内随机坐标点击(x相对坐标(2294), x相对坐标(2418), y相对坐标(966), y相对坐标(1086))
+    #     time.sleep(1.5)
+    #     任意中断信号 = True
+    #
+    # if hsv模板匹配('副本-剧情对话页跳过', config.副本_剧情对话页跳过hsv范围lower,
+    #                config.副本_剧情对话页跳过hsv范围upper, img_a=img):
+    #     print('检测到剧情对话页，正在退出寻路')
+    #     任意中断信号 = True
+    #
+    # if hsv模板匹配('副本-战斗结算', config.副本_战斗结算hsv范围lower, config.副本_战斗结算hsv范围upper, img_a=img):
+    #     print('检测到战斗结算页，正在退出寻路')
+    #     任意中断信号 = True
+    #
+    # if 图像是否存在从配置文件中获取文件路径('副本-战斗结算', gray_mode=True, img_a=img):
+    #     print('检测到意识重启页，正在退出寻路')
+    #     任意中断信号 = True
+    #
+    # 血条像素值 = 怪物名检测(img_a=img)
+    # if 血条像素值 > 500:
+    #     print('检测到怪物名，正在退出寻路')
+    #     任意中断信号 = True
+    #
+    # print(f'跑完一轮检测耗时：{time.time() - start}')
