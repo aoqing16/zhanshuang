@@ -12,6 +12,40 @@ import 共享变量
 import config
 import cv2
 import numpy as np
+import logging
+###定义全局变量，并进行初始化赋值
+灵敏度=None
+# 1. 定义日志的输出格式
+日志格式 = '%(asctime)s [%(levelname)s] (%(filename)s:%(lineno)d) -> %(message)s'
+时间格式 = '%H:%M:%S'
+
+# =============================================================
+# 🛠️ 丢弃 basicConfig，改成方法二：创建你自己的专属对讲机
+# =============================================================
+
+# 💥 第一步：给你的对讲机起个名字（比如叫 log），并设置允许 DEBUG 级别
+log = logging.getLogger("战双RPA")
+log.setLevel(logging.DEBUG)
+
+# 第二步：创建一个只属于这个对讲机的大喇叭，并指定 sys.stdout（让白变白）
+console_handler = logging.StreamHandler(sys.stdout)
+
+# 第三步：把你的格式和时间传给这个大喇叭
+formatter = logging.Formatter(fmt=日志格式, datefmt=时间格式)
+console_handler.setFormatter(formatter)
+
+# 第四步：把大喇叭装到你的对讲机上
+if not log.handlers:  # 防止重复添加喇叭
+    log.addHandler(console_handler)
+
+# =============================================================
+# 🧪 再次测试（🚨 注意：以后全部用 log.xxx，不用 logging.xxx）
+# =============================================================
+
+log.debug('这是一条测试debug信息 (现在是普通的白色了)')
+log.info('这是一条测试info信息 (现在是普通的白色了)')
+log.warning('这是一条测试warning信息')
+log.error('这是一条测试error')
 print('模型加载中')
 try:
     副本首页模型= YOLO(config.yolo模型路径.get('目标检测模型'),task='detect')#目标检测模型
@@ -107,10 +141,12 @@ try:
 
             print(f"\n🚀 正在对接您选定的模拟器: {目标地址} ...")
             return u2.connect(目标地址)
+
+
     if hasattr(sys, '_MEIPASS'):
         d = 自动连接战双模拟器()
     else:
-        d=u2.connect('127.0.0.1:5555')
+        d=u2.connect('127.0.0.1:16384')
     if d:
         print('已成功连接到模拟器，正在启动脚本')
     else:
@@ -196,6 +232,87 @@ try:
         return x
 
 
+    def 自动获取滑动系数(目标中线X=720) -> float:
+        """
+        通过一次100像素的基准测试滑屏，动态计算出：滑动1像素屏幕，地标X轴会移动多少像素。
+        返回计算得到的滑动系数 K。
+        """
+        log.info("🚀 开始进行灵敏度自适应初始化测试...")
+
+        # 设定一次标准测试的滑屏物理距离（比如 100 像素，距离太小误差大，太大容易滑出屏幕）
+        测试滑动像素 = 100
+
+        while True:
+            # 1. 滑动前：获取初始地标位置
+            地标_前 = 地标检测()
+            if not 地标_前:
+                log.warning("❌ 视野内未发现地标，无法初始化！请先通过大幅转视角让地标露脸。")
+                return 0.5  # 兜底返回一个经验经验值
+
+            x1, y1, x2, y2 = 地标_前
+            前_x = (x1 + x2) // 2
+
+            log.debug(f"测试前地标 X 坐标: {前_x}")
+
+            # 2. 执行标准基准滑屏（手指往右滑 100 像素，视角应该往左转，地标在屏幕上应该往右移动）
+            # 💥 这里的 duration 很关键，要和你在微调函数里使用的滑动时间完全一致！
+            d.swipe(
+                int(设备宽度 * 0.5), int(设备高度 * 0.5),
+                int(设备宽度 * 0.5) + 测试滑动像素, int(设备高度 * 0.5),
+                duration=0.18
+            )
+            time.sleep(0.15)  # 给游戏引擎充足的渲染时间，等待画面定格
+
+            # 3. 滑动后：再次获取地标位置
+            地标_后 = 地标检测()
+
+            # ----------------────────────────────────────────────────
+            # 🛑 情况一：滑动后地标消失了（可能滑过头了，或者被人物/特效遮挡）
+            # ----------------────────────────────────────────────────
+            if not 地标_后:
+                log.warning("⚠️ 滑动后地标消失或被遮挡！准备执行反向大幅度拉回，尝试重新捕捉...")
+                # 往反方向（左）狠狠滑一下，让地标重新回滚到视野内
+                d.swipe(
+                    int(设备宽度 * 0.5), int(设备高度 * 0.5),
+                    int(设备宽度 * 0.5) - (测试滑动像素 * 2), int(设备高度 * 0.5),
+                    duration=0.25
+                )
+                time.sleep(0.3)
+                log.info("🔄 视图已重置，重新进入灵敏度测试循环...")
+                continue  # 重新触发第一步
+
+            x1_后, y1_后, x2_后, y2_后 = 地标_后
+            后_x = (x1_后 + x2_后) // 2
+            log.debug(f"测试后地标 X 坐标: {后_x}")
+
+            # ----------------────────────────────────────────────────
+            # 🛑 情况二：地标虽然在，但位移极其诡异（比如被人物遮挡后误认了别的目标）
+            # ----------------────────────────────────────────────────
+            画面实际位移 = 后_x - 前_x
+
+            # 正常情况下，手指往右滑，视角左转，地标绝对是往右移动的（画面实际位移 > 0）
+            # 如果算出来位移是 0 或者负数，说明肯定认错怪了，或者卡墙了
+            # if 画面实际位移 <= 5:
+            #     log.warning(f"检测到异常位移数据 ({画面实际位移}px)，疑似认错目标或卡墙，重试中...")
+            #     time.sleep(0.2)
+            #     continue
+
+            # ----------------────────────────────────────────────────
+            # ✨ 情况三：数据完美，进入数学结算
+            # ----------------────────────────────────────────────────
+            # 我们想知道：地标需要移动 1 像素时，手指得滑多少像素？
+            # 核心公式：K = 手指滑动距离 / 地标在屏幕上实际跑了多少像素
+            K = 测试滑动像素 / 画面实际位移
+
+            # 增加一个合理的物理边界保护，防止因为偶发性噪音算出一个天文数字
+            if 0.1 <= K <= 2.5:
+                log.info(f"✨ [初始化成功] 画面实际响应位移: {画面实际位移}px，计算得出滑动系数 K = {round(K, 3)}")
+                return round(K, 3)
+            else:
+                log.warning(f"算出的系数 {K} 超出人类认知范围，抛弃异常值，重新测试...")
+                continue
+
+
     def y相对坐标(y):
         """
         输入绝对坐标x，输出经缩放后的坐标（整数）
@@ -233,6 +350,55 @@ try:
         地标坐标= yolo检测扩展版(model=地标检测模型, 检测标签="地标")
         print(地标坐标)
         return 地标坐标
+
+
+    地标是否存在 = False
+    def 地标存在检测():
+        """
+        检测画面中是否存在地标，存在返回检测到的坐标，
+        不存在返回False
+        :return: 地标坐标 or False
+
+        """
+        global 地标是否存在
+        地标坐标=地标检测()
+        if 地标坐标:
+            地标是否存在=True
+            return 地标坐标
+        else:
+            return False
+    地标视角校准_遮挡=0
+    def 地标视角校准():
+        """
+        在检测到地标坐标后，会以微调的方式
+        进行视角定位
+        :return: 偏差值小于指定值或者转动让地标消失了，则返回True
+        """
+        global 地标视角校准_遮挡
+        地标坐标=地标存在检测()
+        if 地标坐标:
+            地标视角校准_遮挡=1
+            x1, y1, x2, y2 = 地标坐标
+            中心坐标x = int((x1 + x2) / 2)
+            偏差值 = 中心坐标x - 屏幕中心x
+
+            if 偏差值 > 80:
+                随机小幅度划屏((x相对坐标(1278), y相对坐标(692)), 'right', x相对坐标(20))
+                log.debug("➡️ 标识符偏右，控制摇杆往右前方推，或者向右微调视角")
+                # 你的摇杆控制逻辑...
+            elif 偏差值 < -80:
+                随机小幅度划屏((x相对坐标(1278), y相对坐标(692)), 'left', x相对坐标(20))
+                log.debug("⬅️ 标识符偏左，控制摇杆往左前方推，或者向左微调视角")
+                # 你的摇杆控制逻辑...
+            else:
+                log.debug("⬆️ 已经对准目标！返回True")
+                # 寻路操作()
+                return True
+        elif 地标视角校准_遮挡==1:
+            log.debug("地标滑动后消失，默认对准，返回True")
+            地标视角校准_遮挡=0
+            return True
+
     def 视角校准(current_angle):
         """根据计算出的游戏夹角，一次性滑屏对准地标方向."""
         # ==== 🔑 核心参数配置（关键灵敏度系数） ====
@@ -290,7 +456,7 @@ try:
         d.swipe(start_x, 滑动y轴, end_x, 滑动y轴, duration=0.18)
 
         return False
-    地标是否存在=False
+
     def 地标定位主函数():
         """
         检测画面中是否存在地标，如果存在，则会一次性对准方向，如果不存在，则无任何操作
@@ -480,7 +646,7 @@ try:
         # 2. 新增：置信度拦截门槛
         if conf < 0.85:
             # 置信度太低，说明结果不可靠，直接重置计数器
-            print(f"⚠️ 过滤器拦截：[{label}] 置信度过低 ({conf:.4f} < 0.85)，重置计数")
+            log.debug(f"⚠️ 过滤器拦截：[{label}] 置信度过低 ({conf:.4f} < 0.85)，重置计数")
             过滤后识别结果 = '0'
             count = 0
             return 0
@@ -738,11 +904,9 @@ try:
         start_time=time.time()
         print('已开始移动，开始计时')
         try:
-            轮次计数=0
             while time.time()-start_time<最大时长:
                 start=time.time()
-                img = 缩放图片至基准尺寸(截图())
-                轮次计数+=1
+                img = 截图()
                 if 任意中断信号:
                     break
                 img_yolo = 图像处理(img, "副本_战斗交互按钮")
@@ -752,47 +916,13 @@ try:
                     time.sleep(1.5)
                     任意中断信号 = True
                     break
-                if 轮次计数 % 10==0:
-                    if hsv模板匹配('副本-战斗对话页', config.副本_战斗对话页hsv范围lower, config.副本_战斗对话页hsv范围upper, img_a=img):
-                        区域内随机坐标点击(x相对坐标(1567), x相对坐标(1721), y相对坐标(1200), y相对坐标(1247))
-                        time.sleep(0.1)
-                        区域内随机坐标点击(x相对坐标(2206), x相对坐标(2312), y相对坐标(1071), y相对坐标(1183))
-                        print('检测到触发战斗对话页，寻路结束')
-                        任意中断信号 = True
-
-                        break
-
-
-                    if hsv模板匹配('副本-剧情对话页跳过', config.副本_剧情对话页跳过hsv范围lower,
-                                   config.副本_剧情对话页跳过hsv范围upper,img_a=img):
-                        print('检测到剧情对话页，正在退出寻路')
-                        任意中断信号 = True
-
-                        break
-                    if hsv模板匹配('副本-战斗结算', config.副本_战斗结算hsv范围lower, config.副本_战斗结算hsv范围upper,img_a=img):
-                        print('检测到战斗结算页，正在退出寻路')
-                        任意中断信号 = True
-
-                        break
-                    if 图像是否存在从配置文件中获取文件路径('副本-战斗结算', gray_mode=True,img_a=img):
-                        print('检测到意识重启页，正在退出寻路')
-                        任意中断信号 = True
-
-                        break
-                if 轮次计数 % 5==0:
-                    血条像素值 = 怪物名检测(img_a=img)
-                    if 血条像素值 > 500:
-                        print('检测到怪物名，正在退出寻路')
-                        任意中断信号 = True
-
-                        break
                 print(f'跑完一轮检测耗时：{time.time() - start}')
                 time.sleep(0.005)
         finally:
             d.touch.up(x相对坐标(371), y相对坐标(848))
 
-    屏幕中心x=1278
-    终点标识符检测结果全局=False
+    屏幕中心x=int(设备宽度/2)
+    终点标识符检测结果全局=None
     防遮挡 = 0
     def 终点标识符检测():
         """
@@ -845,25 +975,43 @@ try:
                 print('检测到标识符出现后又消失，默认已对准')
                 return True
             print('未检测到终点标识符')
+    def 寻路视角定位():
+        """
+        寻路视角定位，负责检测画面上是否存有标识符，如果存在，会对准视角，
+        如果不存在，会滑动屏幕进行检测，最大滑动次数为20次。
+        视角对准时返回true
+        超过最大滑动次数仍未检测到时，返回false
+        :return:
+        """
+        终点标识符检测()
+        if 终点标识符检测结果全局:
+            log.debug('检测到终点标识符，正在微调视角中')
+            for j in range(1,21):
+                if 终点标识符检测():
+                    log.debug('视角已对准终点标识符，返回True')
+                    return True
+        else:
+            if 地标存在检测():
+                log.debug('检测到地标，正在微调视角中')
+                for j in range(1,21):
+                    if 地标视角校准():
+                        log.debug('视角已对准地标，返回True')
+                        return True
+            log.debug('未检测到终点标识符，也未检测到地标，正在大幅转动视角')
+            随机小幅度划屏((x相对坐标(1278), y相对坐标(692)), 'left', x相对坐标(100))
+
     任意中断信号=False#用于同步不同作用域的退出信号
     def 寻路主函数():
         global 终点标识符检测结果全局,地标是否存在,任意中断信号
         """
-        重复检测画面，如果检测到标识符会执行移动，如果没有会重试，最大重试次数为20次
+        重复检测画面，如果检测到标识符会执行移动，如果没有会转动视角并重新检测
+        ，最大重试次数为20次，超过后会盲推方向键
+        只负责检测画面是否出现了标识符，具体的视角定位由内部的嵌套函数完成
         :return:
         """
         for i in range(1,21):
             img = 缩放图片至基准尺寸(截图())
             if 任意中断信号:
-                break
-            if hsv模板匹配('副本-战斗对话页', config.副本_战斗对话页hsv范围lower, config.副本_战斗对话页hsv范围upper,
-                           img_a=img):
-                区域内随机坐标点击(x相对坐标(1567), x相对坐标(1721), y相对坐标(1200), y相对坐标(1247))
-                time.sleep(0.1)
-                区域内随机坐标点击(x相对坐标(2206), x相对坐标(2312), y相对坐标(1071), y相对坐标(1183))
-                print('检测到触发战斗对话页，寻路结束')
-                任意中断信号 = True
-
                 break
             img_yolo = 图像处理(img, "副本_战斗交互按钮")
             if yolo检测扩展版(model=地标检测模型, 检测标签="副本—战斗交互按钮", img_a=img_yolo):
@@ -871,6 +1019,15 @@ try:
                 区域内随机坐标点击(x相对坐标(2294), x相对坐标(2418), y相对坐标(966), y相对坐标(1086))
                 time.sleep(1.5)
                 任意中断信号 = True
+                break
+            if hsv模板匹配('副本-战斗对话页', config.副本_战斗对话页hsv范围lower,
+                           config.副本_战斗对话页hsv范围upper, img_a=img):
+                区域内随机坐标点击(x相对坐标(1567), x相对坐标(1721), y相对坐标(1200), y相对坐标(1247))
+                time.sleep(0.1)
+                区域内随机坐标点击(x相对坐标(2206), x相对坐标(2312), y相对坐标(1071), y相对坐标(1183))
+                print('检测到触发战斗对话页，寻路结束')
+                任意中断信号 = True
+
                 break
 
             if hsv模板匹配('副本-剧情对话页跳过', config.副本_剧情对话页跳过hsv范围lower,
@@ -896,21 +1053,15 @@ try:
                 任意中断信号 = True
 
                 break
-            if 终点标识符检测():
+            视角校准结果=寻路视角定位()
+            if 视角校准结果:
                 防卡墙移动()
                 break
-            else:
-                if 地标定位主函数():
-                    防卡墙移动()
-                    break
-                print('未检测到终点标识符，也未检测到地标，正在转动视角')
-                随机小幅度划屏((x相对坐标(1278), y相对坐标(692)), 'left', x相对坐标(100))
-
         else:
             防卡墙移动()
         print('正在初始化终点标识符和地标和中断信号全局变量')
         地标是否存在=False
-        终点标识符检测结果全局=False
+        终点标识符检测结果全局=None
         任意中断信号=False
     def 卡墙时操作():
         随机小幅度划屏((x相对坐标(1278), y相对坐标(692)), 'right', x相对坐标(200))
@@ -929,7 +1080,7 @@ try:
         elif 地标是否存在:
             print('卡墙，正在二次校验地标方向')
             for i in range(1, 21):
-                if 地标定位主函数():
+                if 地标视角校准():
                     print('已重新校验方向')
                     break
                 else:
@@ -947,21 +1098,21 @@ try:
             img = 缩放图片至基准尺寸(截图())
             if 任意中断信号:
                 break
-            if hsv模板匹配('副本-战斗对话页', config.副本_战斗对话页hsv范围lower, config.副本_战斗对话页hsv范围upper,
-                           img_a=img):
-                区域内随机坐标点击(x相对坐标(1567), x相对坐标(1721), y相对坐标(1200), y相对坐标(1247))
-                time.sleep(0.1)
-                区域内随机坐标点击(x相对坐标(2206), x相对坐标(2312), y相对坐标(1071), y相对坐标(1183))
-                print('检测到触发战斗对话页，寻路结束')
-                任意中断信号 = True
-
-                break
             img_yolo = 图像处理(img, "副本_战斗交互按钮")
             if yolo检测扩展版(model=地标检测模型, 检测标签="副本—战斗交互按钮", img_a=img_yolo):
                 print('检测到交互按钮，默认已实现寻路效果')
                 区域内随机坐标点击(x相对坐标(2294), x相对坐标(2418), y相对坐标(966), y相对坐标(1086))
                 time.sleep(1.5)
                 任意中断信号 = True
+                break
+            if hsv模板匹配('副本-战斗对话页', config.副本_战斗对话页hsv范围lower,
+                           config.副本_战斗对话页hsv范围upper, img_a=img):
+                区域内随机坐标点击(x相对坐标(1567), x相对坐标(1721), y相对坐标(1200), y相对坐标(1247))
+                time.sleep(0.1)
+                区域内随机坐标点击(x相对坐标(2206), x相对坐标(2312), y相对坐标(1071), y相对坐标(1183))
+                print('检测到触发战斗对话页，寻路结束')
+                任意中断信号 = True
+
                 break
 
             if hsv模板匹配('副本-剧情对话页跳过', config.副本_剧情对话页跳过hsv范围lower,
@@ -995,6 +1146,8 @@ try:
                 if 终点标识符检测结果全局:
                     print('非卡墙，正在二次校验标识符方向')
                     for i in range(1, 21):
+                        if 任意中断信号:
+                            break
                         if 终点标识符检测():
                             print('已重新校验方向')
                             break
@@ -1002,7 +1155,9 @@ try:
                             随机小幅度划屏((x相对坐标(1278), y相对坐标(692)), 'left', x相对坐标(100))
                 elif 地标是否存在:
                     for i in range(1, 21):
-                        if 地标定位主函数():
+                        if 任意中断信号:
+                            break
+                        if 地标视角校准():
                             print('已重新校验方向')
                             break
                         else:
@@ -1080,11 +1235,11 @@ try:
         # elif 寻敌检测结果 is False:
         #     print('不需要寻敌，重置寻敌次数')
         #     寻敌次数 = 0
-        if 寻敌次数>=5:
-            print('寻敌无效，执行寻路中……')
-            print('执行寻路操作,重置寻敌次数')
-            寻敌次数=0
+        if 寻敌次数>=3:
             with 共享变量.寻路和战斗锁:
+                print('寻敌无效，执行寻路中……')
+                print('执行寻路操作,重置寻敌次数')
+                寻敌次数 = 0
                 寻路主函数()
             print('寻路操作执行完毕,正在初始化变量')
 
@@ -1135,38 +1290,29 @@ try:
         # 获取全图所有框的数量
         total_boxes = len(res.boxes)
         if total_boxes == 0:
-            print(f"[YOLO] ❌ 画面空空如也，未检测到任何满足置信度 >= {置信度} 的目标。")
+            log.debug(f"[YOLO] ❌ 画面空空如也，未检测到任何满足置信度 >= {置信度} 的目标。")
             return None
-
-        print(
-            f"[YOLO] 📊 画面扫描完毕，当前共圈出 {total_boxes} 个潜在目标（已过滤低置信度），开始匹配标签..."
-        )
+        log.debug(f"[YOLO] 📊 画面扫描完毕，当前共圈出 {total_boxes} 个潜在目标（已过滤低置信度），开始匹配标签...")
 
         # 2. 遍历所有检测到的物体
         for idx, box in enumerate(res.boxes):
             cls_id = int(box.cls[0].item())
             label_name = res.names[cls_id]
             conf_value = float(box.conf[0].item())
-
-            print(
-                f"   └── 目标 #{idx + 1}: 标签=【{label_name}】| 置信度={conf_value:.4f}"
-            )
+            log.debug(f"[YOLO] 目标 #{idx + 1}: 标签=【{label_name}】| 置信度={conf_value:.4f}")
 
             # 3. 核心过滤
             if label_name == 检测标签:
                 x1, y1, x2, y2 = box.xyxy[0].tolist()
-                print(
-                    f"[YOLO] 🎯 完美匹配！成功锁定目标【{检测标签}】(置信度:{conf_value:.2f})"
-                )
-                print(
+                log.debug(f"[YOLO] 🎯 完美匹配！成功锁定目标【{检测标签}】(置信度:{conf_value:.2f})")
+
+                log.debug(
                     f"       坐标框为: [{x1:.2f}, {y1:.2f}, {x2:.2f}, {y2:.2f}]"
                 )
                 return [x1, y1, x2, y2]
 
         # 4. 如果把全图的框都看完了，也没有找到你要的标签
-        print(
-            f"[YOLO] ⚠️ 匹配失败：虽然全图抓到了 {total_boxes} 个东西，但里面没有一个叫【{检测标签}】的。"
-        )
+        log.debug(f"[YOLO] ⚠️ 匹配失败：虽然全图抓到了 {total_boxes} 个东西，但里面没有一个叫【{检测标签}】的。")
         return None
     def yolo检测(img,model=None, conf_threshold=0.5):
         """
@@ -1181,7 +1327,7 @@ try:
         # 2. 推理
         results = model(img, conf=conf_threshold, verbose=False)
         识别标签名 = [results[0].names[int(cls)] for cls in results[0].boxes.cls]
-        print(f'yolo检测结果【{识别标签名}】')
+        log.debug(f"[YOLO] 检测到的标签: {识别标签名}")
         # 3. 提取坐标 (boxes.xyxy 返回的是 Tensor)
         boxes = results[0].boxes.xyxy.cpu().numpy().tolist()
 
@@ -1262,7 +1408,7 @@ try:
     def hsv模板匹配(key, hsv_lower, hsv_upper, threshold=0.7,img_a=None):
         """
         复合检测函数：先 HSV 掩膜过滤，再进行模板匹配
-        :param img_a:
+        :param img_a: 可选参数，传入的图像，如果为 None 则会自动截图
         :param key: 模板图片键名
         :param hsv_lower: HSV下限
         :param hsv_upper: HSV上限
@@ -1878,6 +2024,40 @@ try:
                     print(f"战斗发生异常: {e}")
                     time.sleep(1)
             time.sleep(0.05)
+        log.debug('战斗循环结束，正在检测战斗交互按钮')
+        img_yolo = 图像处理(img, "副本_战斗交互按钮")
+        if yolo检测扩展版(model=地标检测模型, 检测标签="副本—战斗交互按钮", img_a=img_yolo):
+            print('检测到交互按钮，正在点击')
+            区域内随机坐标点击(x相对坐标(2294), x相对坐标(2418), y相对坐标(966), y相对坐标(1086))
+            time.sleep(1.5)
+            start_time=time.time()
+            while time.time() - start_time < 3:
+                img_yolo = 图像处理(img, "副本_战斗交互按钮")
+                if yolo检测扩展版(model=地标检测模型, 检测标签="副本—战斗交互按钮", img_a=img_yolo):
+                    print('交互按钮仍然存在，继续点击')
+                    区域内随机坐标点击(x相对坐标(2294), x相对坐标(2418), y相对坐标(966), y相对坐标(1086))
+                    time.sleep(1)
+                else:
+                    print('交互按钮已消失，退出循环')
+                    break
+        if hsv模板匹配('副本-战斗对话页', config.副本_战斗对话页hsv范围lower,
+                       config.副本_战斗对话页hsv范围upper):
+            区域内随机坐标点击(x相对坐标(1567), x相对坐标(1721), y相对坐标(1200), y相对坐标(1247))
+            time.sleep(0.1)
+            区域内随机坐标点击(x相对坐标(2206), x相对坐标(2312), y相对坐标(1071), y相对坐标(1183))
+            print('检测到战斗对话页，正在执行点击')
+            time.sleep(0.2)
+            for i in range(2):
+                if hsv模板匹配('副本-战斗对话页', config.副本_战斗对话页hsv范围lower,
+                               config.副本_战斗对话页hsv范围upper):
+                    log.debug('战斗对话页按钮仍然存在，尝试点击')
+                    区域内随机坐标点击(x相对坐标(1567), x相对坐标(1721), y相对坐标(1200), y相对坐标(1247))
+                    time.sleep(0.1)
+                    区域内随机坐标点击(x相对坐标(2206), x相对坐标(2312), y相对坐标(1071), y相对坐标(1183))
+                    time.sleep(0.5)
+                else:
+                    log.debug('战斗对话页按钮已消失，退出点击循环')
+                    break
         print('退出战斗循环，正在结束子线程')
         共享变量.停止寻敌信号 = True
         print("🎉 子线程已经彻底凉透，主线程可以安心继续推进了。")
@@ -2020,42 +2200,10 @@ except Exception as e:
     traceback.print_exc()
     input("\n👉 按回车键退出程序...")
 if __name__ == '__main__':
-    寻路主函数()
-    # start = time.time()
-    # img = 缩放图片至基准尺寸(截图())
-    # if 任意中断信号:
-    #     pass
-    # if hsv模板匹配('副本-战斗对话页', config.副本_战斗对话页hsv范围lower, config.副本_战斗对话页hsv范围upper,
-    #                img_a=img):
-    #     区域内随机坐标点击(x相对坐标(1567), x相对坐标(1721), y相对坐标(1200), y相对坐标(1247))
-    #     time.sleep(0.1)
-    #     区域内随机坐标点击(x相对坐标(2206), x相对坐标(2312), y相对坐标(1071), y相对坐标(1183))
-    #     print('检测到触发战斗对话页，寻路结束')
-    #     任意中断信号 = True
-    #
-    # img_yolo = 图像处理(img, "副本_战斗交互按钮")
-    # if yolo检测扩展版(model=地标检测模型, 检测标签="副本—战斗交互按钮", img_a=img_yolo):
-    #     print('检测到交互按钮，默认已实现寻路效果')
-    #     区域内随机坐标点击(x相对坐标(2294), x相对坐标(2418), y相对坐标(966), y相对坐标(1086))
-    #     time.sleep(1.5)
-    #     任意中断信号 = True
-    #
-    # if hsv模板匹配('副本-剧情对话页跳过', config.副本_剧情对话页跳过hsv范围lower,
-    #                config.副本_剧情对话页跳过hsv范围upper, img_a=img):
-    #     print('检测到剧情对话页，正在退出寻路')
-    #     任意中断信号 = True
-    #
-    # if hsv模板匹配('副本-战斗结算', config.副本_战斗结算hsv范围lower, config.副本_战斗结算hsv范围upper, img_a=img):
-    #     print('检测到战斗结算页，正在退出寻路')
-    #     任意中断信号 = True
-    #
-    # if 图像是否存在从配置文件中获取文件路径('副本-战斗结算', gray_mode=True, img_a=img):
-    #     print('检测到意识重启页，正在退出寻路')
-    #     任意中断信号 = True
-    #
-    # 血条像素值 = 怪物名检测(img_a=img)
-    # if 血条像素值 > 500:
-    #     print('检测到怪物名，正在退出寻路')
-    #     任意中断信号 = True
-    #
-    # print(f'跑完一轮检测耗时：{time.time() - start}')
+    while True:
+        if 地标存在检测():
+            if 地标视角校准():
+                break
+        else:
+            随机小幅度划屏((x相对坐标(1278), y相对坐标(692)), 'left', x相对坐标(100))
+        time.sleep(0.5)
