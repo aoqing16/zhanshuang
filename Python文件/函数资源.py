@@ -41,12 +41,7 @@ if not log.handlers:  # 防止重复添加喇叭
 # =============================================================
 # 🧪 再次测试（🚨 注意：以后全部用 log.xxx，不用 logging.xxx）
 # =============================================================
-
-log.debug('这是一条测试debug信息 (现在是普通的白色了)')
-log.info('这是一条测试info信息 (现在是普通的白色了)')
-log.warning('这是一条测试warning信息')
-log.error('这是一条测试error')
-print('模型加载中')
+log.info('模型加载中')
 try:
     副本首页模型= YOLO(config.yolo模型路径.get('目标检测模型'),task='detect')#目标检测模型
     分类模型 = YOLO(config.yolo模型路径.get('分类模型'), task='classify')#分类模型
@@ -157,6 +152,37 @@ try:
         return img
 
 
+    import os
+    import time
+
+
+    def 异常捕获截图(文件夹路径=config.异常捕获文件夹路径) -> str:
+        """
+        单一职责：捕获当前屏幕，并以当前时间戳命名保存到指定文件夹中。
+        返回保存后的图片绝对路径。
+        """
+        # 1. 健壮性检查：确保保存的文件夹一定存在
+        if not os.path.exists(文件夹路径):
+            os.makedirs(文件夹路径)
+
+        # 2. 生成绝对唯一的时间戳文件名
+        # 格式：20260630_125327 (年月日_时分秒)
+        时间戳 = time.strftime("%Y%m%d_%H%M%S")
+        图片名称 = f"exception_{时间戳}.png"
+        完整路径 = os.path.join(文件夹路径, 图片名称)
+
+        # 3. 核心执行：截图并保存
+        img = 截图()
+        cv2.imwrite(完整路径,img)
+        log.debug('已保存图片至Exception handing文件夹')
+
+        # 4. 返回路径供外界打日志或排查使用
+    def 异常时操作():
+        """
+        异常时执行的操作
+        :return:
+        """
+        区域内随机坐标点击(x相对坐标(1677), x相对坐标(2145), y相对坐标(1180), y相对坐标(1316))
     def 图像处理(img, 目标名称, hsv_dict=config.hsv配置字典, roi_dict=config.roi配置字典):
         """
         根据传入的双配置字典，动态提取指定目标的归一化坐标进行裁剪，并应用 HSV 过滤。
@@ -1469,15 +1495,15 @@ try:
         """
         try:
             if not boxes:
-                print("\n[🔍 调试-异常] ❌ 未检测到任何关卡区域 (boxes为空)")
+                log.debug("\n[🔍 调试-异常] ❌ 未检测到任何关卡区域 (boxes为空)")
                 return 0
 
-            print(f"\n================ 🔍 关卡筛选雷达启动 ================")
-            print(f"[🔍 调试-输入] 屏幕当前检测到 {len(boxes)} 个关卡目标。")
+            log.debug(f"\n================ 🔍 关卡筛选雷达启动 ================")
+            log.debug(f"[🔍 调试-输入] 屏幕当前检测到 {len(boxes)} 个关卡目标。")
 
             # ———————— 第一步：收集基础数据 ————————
             all_x2s = [int(box[2]) for box in boxes]
-            print(f"[🔍 调试-全局] 所有关卡右边界坐标列表: {sorted(all_x2s)}")
+            log.debug(f"[🔍 调试-全局] 所有关卡右边界坐标列表: {sorted(all_x2s)}")
 
             # ———————— 第二步：排除已通关区域，找出所有未通关候选者 ————————
             uncompleted_candidates = []
@@ -1486,13 +1512,13 @@ try:
                 x1, y1, x2, y2 = map(int, box)
                 center_x, center_y = (x1 + x2) // 2, (y1 + y2) // 2
 
-                print(f"\n--- 📦 正在排查 编号#{idx} 关卡 ---")
-                print(f" 坐标范围: ({x1}, {y1}) -> ({x2}, {y2}) | 中心点: ({center_x}, {center_y})")
+                log.debug(f"\n--- 📦 正在排查 编号#{idx} 关卡 ---")
+                log.debug(f" 坐标范围: ({x1}, {y1}) -> ({x2}, {y2}) | 中心点: ({center_x}, {center_y})")
 
                 # 获取 ROI 并检查有效性
                 roi = img[max(0, y1):min(img.shape[0], y2), max(0, x1):min(img.shape[1], x2)]
                 if roi.size == 0:
-                    print(f" ⚠️ [警告] 编号#{idx} 关卡的 ROI 裁剪区域大小为 0，跳过处理。")
+                    log.debug(f" ⚠️ [警告] 编号#{idx} 关卡的 ROI 裁剪区域大小为 0，跳过处理。")
                     continue
 
                 is_occupied = False
@@ -1508,25 +1534,25 @@ try:
                         roi_h, roi_w = masked_roi.shape[:2]
                         tpl_h, tpl_w = data['gray'].shape[:2]
                         if roi_h < tpl_h or roi_w < tpl_w:
-                            print(
+                            log.debug(
                                 f" ⏭️ [防崩拦截] 编号#{idx} 区域尺寸({roi_w}x{roi_h})小于模板尺寸({tpl_w}x{tpl_h})，放弃匹配。")
                             continue
                         res = cv2.matchTemplate(masked_roi, data['gray'], cv2.TM_CCOEFF_NORMED)
                         _, max_val, _, _ = cv2.minMaxLoc(res)
 
-                        print(
+                        log.debug(
                             f" 🔍 [匹配中] 匹配模板:[{state}] | 遮罩像素数:{pixel_count} | 匹配置信度:{max_val:.4f} (阈值:{threshold})")
 
                         if max_val >= threshold:
-                            print(f" 🛑 [结果] 编号#{idx} 匹配成功！判定为：【已通关/已被占领】")
+                            log.debug(f" 🛑 [结果] 编号#{idx} 匹配成功！判定为：【已通关/已被占领】")
                             is_occupied = True
                             break
                     else:
-                        print(f" ⏭️ [跳过] 匹配模板:[{state}] | 遮罩绿色/特定色像素仅有 {pixel_count} (未达100门槛)")
+                        log.debug(f" ⏭️ [跳过] 匹配模板:[{state}] | 遮罩绿色/特定色像素仅有 {pixel_count} (未达100门槛)")
 
                 # 如果没检测到通关标识，记录为未通关候选
                 if not is_occupied:
-                    print(f" ✨ [结果] 编号#{idx} 未检测到任何通关标识 -> 【加入未通关候选队列】")
+                    log.debug(f" ✨ [结果] 编号#{idx} 未检测到任何通关标识 -> 【加入未通关候选队列】")
                     uncompleted_candidates.append({
                         'id': idx,
                         'center': (center_x, center_y),
@@ -1534,30 +1560,33 @@ try:
                     })
 
             # ———————— 第三步：用新的“排除 x2 <= 140 并随机返回”逻辑做最终决策 ————————
-            print(f"\n================ ⚖️ 最终校验决策阶段 ================")
+            log.debug(f"\n================ ⚖️ 最终校验决策阶段 ================")
             if not uncompleted_candidates:
-                print("[🔍 调试-决策] 😭 候选队列为空：屏幕上所有关卡均已被通关，脚本无操作。")
+                log.debug("[🔍 调试-决策] 😭 候选队列为空：屏幕上所有关卡均已被通关，脚本无操作。")
                 return 0
 
-            print(f"[🔍 调试-决策] 过滤前候选队列中共 {len(uncompleted_candidates)} 个未通关关卡。")
+            log.debug(f"[🔍 调试-决策] 过滤前候选队列中共 {len(uncompleted_candidates)} 个未通关关卡。")
 
             # 🌟 核心改动 1：使用列表推导式，直接过滤掉所有右边界在 140 以内的目标
-            final_valid_candidates = [cand for cand in uncompleted_candidates if cand['x2'] > 140]
+            final_valid_candidates = [
+                cand for cand in uncompleted_candidates
+                if x相对坐标(140) < cand['x2'] <= x相对坐标(2420)
+            ]
 
             if not final_valid_candidates:
-                print("[🔍 调试-决策] 🛑 过滤后有效队列为空！所有未通关关卡都在 x2 <= x相对坐标(140) 范围内（边缘干扰），放弃点击。")
+                log.debug("[🔍 调试-决策] 🛑 过滤后有效队列为空！所有未通关关卡都在屏幕两侧范围内（边缘干扰），放弃点击。")
                 return 0
 
-            print(f"[🔍 调试-决策] 🟢 过滤后通过验证，当前共有 {len(final_valid_candidates)} 个有效未通关关卡可供点击。")
+            log.debug(f"[🔍 调试-决策] 🟢 过滤后通过验证，当前共有 {len(final_valid_candidates)} 个有效未通关关卡可供点击。")
             for cand in final_valid_candidates:
-                print(f"  -> 可选池 编号#{cand['id']} | 右边界 x2 = {cand['x2']} | 中心点 = {cand['center']}")
+                log.debug(f"  -> 可选池 编号#{cand['id']} | 右边界 x2 = {cand['x2']} | 中心点 = {cand['center']}")
 
             # 🌟 核心改动 2：完全废除最右过滤！利用 random.choice 在通过过滤的池子里随机摇号抓一个出来
             chosen_candidate = random.choice(final_valid_candidates)
 
-            print(f"\n🎲 [随机抽选完成] 命中池子中的 编号#{chosen_candidate['id']} 关卡！")
-            print(f"📊 目标右边界 x2 = {chosen_candidate['x2']} | 随机返回中心点 = {chosen_candidate['center']}")
-            print(f"====================================================\n")
+            log.debug(f"\n🎲 [随机抽选完成] 命中池子中的 编号#{chosen_candidate['id']} 关卡！")
+            log.debug(f"📊 目标右边界 x2 = {chosen_candidate['x2']} | 随机返回中心点 = {chosen_candidate['center']}")
+            log.debug(f"====================================================\n")
             x,y=chosen_candidate['center']
             x=x相对坐标(x)
             y=y相对坐标(y)
@@ -1565,8 +1594,8 @@ try:
             return 相对坐标
 
         except Exception as e:
-            print('获取最右侧关卡函数出现错误，返回0')
-            print(f'错误信息：{e}')
+            log.error('获取最右侧关卡函数出现错误，返回0')
+            log.error(f'错误信息：{e}')
             return 0
 
     hsv_min=np.array([0,0,246])
@@ -2200,4 +2229,6 @@ except Exception as e:
     traceback.print_exc()
     input("\n👉 按回车键退出程序...")
 if __name__ == '__main__':
-    寻路主函数()
+    img = 缩放图片至基准尺寸(截图())
+    n = yolo检测(img, model=副本首页模型)[0]
+    m = 获取最右侧未通关关卡反向排除版(img, n)
