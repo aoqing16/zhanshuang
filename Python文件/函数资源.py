@@ -1158,7 +1158,7 @@ try:
                         if 任意中断信号:
                             break
                         if 地标视角校准():
-                            print('已重新校验方向')
+                            log.info('已重新校验方向')
                             break
                         else:
                             随机小幅度划屏((x相对坐标(1278), y相对坐标(692)), 'left', x相对坐标(100))
@@ -2200,10 +2200,4 @@ except Exception as e:
     traceback.print_exc()
     input("\n👉 按回车键退出程序...")
 if __name__ == '__main__':
-    while True:
-        if 地标存在检测():
-            if 地标视角校准():
-                break
-        else:
-            随机小幅度划屏((x相对坐标(1278), y相对坐标(692)), 'left', x相对坐标(100))
-        time.sleep(0.5)
+    寻路主函数()
