@@ -2221,13 +2221,13 @@ try:
         return os.path.join(base_path, relative_path)
 
 
-    def 随机小幅度划屏(起止点,滑动方向, 滑动距离=40, 持续时间=0.1):
+    def 随机小幅度划屏(起止点,滑动方向, 滑动距离=40, 持续时间=200):
         """在屏幕中心随机区域内，执行指定方向的小幅度平滑滑动（适用于视角微调）
         :param 起止点：坐标元组
         :param d: uiautomator2 的连接对象实例 (例如 d = u2.connect())
         :param 滑动方向: 滑动方向，可选字符串: 'left' / 'right' / 'up' / 'down'
-        :param 滑动距离: 滑动的像素跨度，默认 80（对应你之前的 1040-960）
-        :param 持续时间: 滑动动作持续时间（秒），默认 0.1 秒以保持平滑转视角
+        :param 滑动距离: 滑动的像素跨度，默认 80（对应你之前的 1040-920
+        :param 持续时间: 滑动动作持续时间（毫秒），默认 0.1 秒以保持平滑转视角
         """
         # 1. 在屏幕中心 (960, 540) 附近生成一个随机起点，避免每次点位完全一致
         # 这样可以模拟真实手指按在屏幕上的微小位置差异
@@ -2254,13 +2254,8 @@ try:
         else:
             print(f"❌ 错误：不支持的滑动方向 [{滑动方向}]")
             return False
-
-        # 3. 打印 DEBUG 日志，方便你在控制台观察视角控制是否频繁触发
-        # print(f"🔄 视角微调: 方向 [{direction}], 轨迹 ({start_x}, {start_y}) -> ({end_x}, {end_y}), 耗时: {duration}s")
-
-        # 4. 调用 u2 执行物理滑动
         try:
-            d.swipe(start_x, start_y, end_x, end_y, duration=持续时间)
+            d.shell(f'input swipe {start_x} {start_y} {end_x} {end_y} {持续时间}')
             return True
         except Exception as e:
             print(f"⚠️ 滑动操作异常: {e}")
@@ -2278,4 +2273,4 @@ except Exception as e:
     traceback.print_exc()
     input("\n👉 按回车键退出程序...")
 if __name__ == '__main__':
-    卡墙时操作()
+    随机小幅度划屏((x相对坐标(1278), y相对坐标(692)), 'right', x相对坐标(350))
