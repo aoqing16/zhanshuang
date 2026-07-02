@@ -1907,16 +1907,47 @@ try:
             else:
                 break
             time.sleep(1)
+    def 副本结束检测():
+        """
+        检测副本是否已经结束，如果结束，则
+        返回True
+        :return:
+        """
+        return 共享变量.latest_result in ["副本-意识重启", "副本-剧情对话页", "副本-战斗结算"]
+    def 处于副本内():
+        副本开始时间=time.time()
+        战斗主函数(副本开始时间)
+        while time.time()-副本开始时间<260:
+            if 副本结束检测():
+                log.info('副本已结束，退出副本内状态')
+                return
+            if 战斗场景检测():
+                print('仍然处于副本内，继续战斗')
+                战斗主函数(副本开始时间)
 
-    def 战斗主函数():
+            img = 缩放图片至基准尺寸(截图())
+            img_yolo = 图像处理(img, "副本_战斗交互按钮")
+            if yolo检测扩展版(model=地标检测模型, 检测标签="副本—战斗交互按钮", img_a=img_yolo):
+                print('检测到交互按钮，正在点击')
+                区域内随机坐标点击(x相对坐标(2294), x相对坐标(2418), y相对坐标(966), y相对坐标(1086))
+                time.sleep(1.5)
+            if hsv模板匹配('副本-战斗对话页', config.副本_战斗对话页hsv范围lower,
+                           config.副本_战斗对话页hsv范围upper):
+                区域内随机坐标点击(x相对坐标(1567), x相对坐标(1721), y相对坐标(1200), y相对坐标(1247))
+                time.sleep(0.1)
+                区域内随机坐标点击(x相对坐标(2206), x相对坐标(2312), y相对坐标(1071), y相对坐标(1183))
+                print('检测到战斗对话页，正在执行点击')
+                time.sleep(0.2)
+            time.sleep(0.1)
+
+    def 战斗主函数(副本计时=0):
         empty_count = 0
-        start_time_1 = time.time()
         上一次闪避时间=0
         print('开始战斗计时')
         while not 共享变量.超时信号:
             闪避计时=time.time()
-            print(f'当前已运行时间:{time.time() - start_time_1}')
-            if time.time() - start_time_1 > 260:
+            print(f'当前已运行时间:{time.time() - 副本计时}')
+            if time.time() - 副本计时 > 260:
                 共享变量.超时信号 = True
                 print('副本已超时，正在执行退出')
                 print('正在同步时间')

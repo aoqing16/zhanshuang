@@ -30,9 +30,9 @@ def 页面匹配():
             t = threading.Thread(target=寻敌子线程, daemon=True)
             t.start()
             线程初始化+=1
-        战斗主函数()
-        ui变化检测(['战斗加载页'])
-        print('战斗函数已退出')
+        处于副本内()
+
+        print('已退出副本内状态')
     print(共享变量.latest_result)
 
     if 共享变量.latest_result == '副本首页':
