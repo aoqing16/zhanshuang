@@ -322,6 +322,10 @@ try:
         """
         global 地标视角校准_遮挡, 地标视角校准_历史坐标
         for j in range(1, 21):
+            if j % 5 == 0:
+                result=寻路退出条件检测()
+                if result:
+                    break
             地标坐标 = 地标存在检测()
             if 地标坐标:
                 地标视角校准_遮挡 = 1
@@ -887,6 +891,10 @@ try:
         if 终点标识符检测结果全局:
             log.debug('检测到终点标识符，正在微调视角中')
             for j in range(1,21):
+                if j %5==0:
+                    result=寻路退出条件检测()
+                    if result:
+                        break
                 if 终点标识符检测():
                     log.debug('视角已对准终点标识符，返回True')
                     return True
@@ -902,6 +910,20 @@ try:
 
 
     任意中断信号=False#用于同步不同作用域的退出信号
+    def 寻路退出条件检测():
+        """
+        用于检测画面上是否存在需要终止寻路进程的条件
+        如果存在任意一个条件，返回True
+        :return:
+        """
+        global 任意中断信号
+        if hsv模板匹配('副本-战斗对话页', config.副本_战斗对话页hsv范围lower,
+                       config.副本_战斗对话页hsv范围upper):
+            log.info('检测到副本_战斗对话页，返回True')
+            任意中断信号=True
+            return True
+        else:
+            return False
     def 寻路主函数():
         global 终点标识符检测结果全局,地标是否存在,任意中断信号
         """
@@ -975,6 +997,10 @@ try:
             for i in range(1,21):
                 if 终点标识符是否存在():
                     for j in range(1,21):
+                        if j %5==0:
+                            result=寻路退出条件检测()
+                            if result:
+                                break
                         if 终点标识符检测():
                             print('已重新校验方向')
                             break
@@ -988,6 +1014,8 @@ try:
         elif 地标是否存在:
             print('卡墙，正在二次校验地标方向')
             for i in range(1, 21):
+                if 任意中断信号:
+                    break
                 if 地标存在检测():
                     if 地标视角校准():
                         print('已重新校验方向')
@@ -1060,6 +1088,10 @@ try:
                             break
                         if 终点标识符是否存在():
                             for j in range(1, 21):
+                                if j %5==0:
+                                    result=寻路退出条件检测()
+                                    if result:
+                                        break
                                 if 终点标识符检测():
                                     print('已重新校验方向')
                                     break
@@ -2114,4 +2146,13 @@ except Exception as e:
     traceback.print_exc()
     input("\n👉 按回车键退出程序...")
 if __name__ == '__main__':
-    寻路主函数()
+    for i in range(1, 21):
+        if 任意中断信号:
+            break
+        if 地标存在检测():
+            if 地标视角校准():
+                log.info('已重新校验方向')
+                break
+        else:
+            随机小幅度划屏((x相对坐标(1278), y相对坐标(692)), 'left', x相对坐标(100))
+            time.sleep(0.5)
