@@ -53,6 +53,8 @@ yolo模型路径={"分类模型": os.path.join(项目根目录路径, "model", '
     "撤退":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_23.png'),
     "撤退_确定":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_24.png'),
     "拒绝通信":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_7.png'),
+    "旧版界面UI":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_8.png'),
+    "新版界面UI":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_12.png'),
 
 }
 

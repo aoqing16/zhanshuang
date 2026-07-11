@@ -1563,13 +1563,14 @@ try:
             if 首个章节标签:
                 break
             else:
-                d.swipe(x相对坐标(150), y相对坐标(345), x相对坐标(160), y相对坐标(1215), steps=10)
+                d.shell(f"input swipe {x相对坐标(150)} {y相对坐标(345)} {x相对坐标(160)} {y相对坐标(1215)} 50")
                 time.sleep(1.5)
     def 章节位置初始化():
         for i in range(6):
             print(f"正在进行第 {i + 1} 次向右滑动...")
-            d.swipe_ext("right", scale=0.2)
-            time.sleep(0.8)
+
+            d.shell(f"input swipe {x相对坐标(1080)} {y相对坐标(720)} {x相对坐标(1480)} {y相对坐标(720)} 100")
+            time.sleep(1)
 
 
     def 检查区域是否命中章节标签黑名单(blacklist_dict=None, roi=config.章节标签roi, threshold=0.7):
@@ -1734,7 +1735,8 @@ try:
 
             if 通关标志:
                 # 执行左滑
-                d.swipe_ext("left", scale=0.2)
+
+                d.shell(f"input swipe {x相对坐标(1480)} {y相对坐标(720)} {x相对坐标(1080)} {y相对坐标(720)} 100")
                 章节滑动次数 += 1  # 计数加 1
                 print(f"检测到通关标志，已累计向左滑动 {章节滑动次数} 次")
                 time.sleep(1)
@@ -1743,7 +1745,8 @@ try:
             else:
                 章节黑名单结果=是否命中章节黑名单(blacklist_dict=章节黑名单)
                 if 章节黑名单结果:
-                    d.swipe_ext("left", scale=0.2)
+                    # 起点在中心靠右，终点在中心靠左
+                    d.shell(f"input swipe {x相对坐标(1480)} {y相对坐标(720)} {x相对坐标(1080)} {y相对坐标(720)} 100")
                     章节滑动次数 += 1  # 计数加 1
                     time.sleep(1)
                 else:
@@ -2177,13 +2180,4 @@ except Exception as e:
     traceback.print_exc()
     input("\n👉 按回车键退出程序...")
 if __name__ == '__main__':
-    for i in range(1, 21):
-        if 任意中断信号:
-            break
-        if 地标存在检测():
-            if 地标视角校准():
-                log.info('已重新校验方向')
-                break
-        else:
-            随机小幅度划屏((x相对坐标(1278), y相对坐标(692)), 'left', x相对坐标(100))
-            time.sleep(0.5)
+    未通关章节定位()
