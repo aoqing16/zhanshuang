@@ -419,7 +419,7 @@ try:
         _, max_val, _, _ = cv2.minMaxLoc(res)
 
         # 3. 返回匹配结果
-        # print(f"DEBUG: {img_name} 匹配度: {max_val:.4f}") # 调试用
+        log.debug(f"{key} 匹配度: {max_val:.4f}") # 调试用
         return max_val >= threshold
 
     def 图像随机位置点击配置文件(key, threshold=0.7, padding=0):
@@ -459,7 +459,8 @@ try:
             # 随机生成坐标
             rand_x = random.randint(x_min, x_max)
             rand_y = random.randint(y_min, y_max)
-            d.click(x相对坐标(rand_x), y相对坐标(rand_y))
+            zuobiao_dict=(rand_x,rand_y)
+            adb_click(zuobiao_dict)
 
         return None
 
@@ -1558,12 +1559,12 @@ try:
 
 
     def 章节标签位置初始化():
-        while True:
+        for i in range(10):
             首个章节标签 = 图像是否存在从配置文件中获取文件路径('首个章节标签')
             if 首个章节标签:
                 break
             else:
-                d.shell(f"input swipe {x相对坐标(150)} {y相对坐标(345)} {x相对坐标(160)} {y相对坐标(1215)} 50")
+                d.shell(f"input swipe {x相对坐标(150)} {y相对坐标(345)} {x相对坐标(160)} {y相对坐标(1215)} 250")
                 time.sleep(1.5)
     def 章节位置初始化():
         for i in range(6):
@@ -2127,6 +2128,9 @@ try:
         # 最终拼接出来的结果就是正确的路径
         return os.path.join(base_path, relative_path)
 
+    def 主页_主页检测():
+        if 图像是否存在从配置文件中获取文件路径('主页_任务'):
+            log.debug('检测到主页任务按钮，正在点击')
 
     def 随机小幅度划屏(起止点,滑动方向, 滑动距离=40, 持续时间=200):
         """在屏幕中心随机区域内，执行指定方向的小幅度平滑滑动（适用于视角微调）
@@ -2180,4 +2184,5 @@ except Exception as e:
     traceback.print_exc()
     input("\n👉 按回车键退出程序...")
 if __name__ == '__main__':
-    未通关章节定位()
+    if 图像是否存在从配置文件中获取文件路径('主页_任务'):
+        log.debug('检测到主页任务按钮，正在点击')
