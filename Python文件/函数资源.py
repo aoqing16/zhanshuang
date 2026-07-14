@@ -444,7 +444,7 @@ try:
         h, w = template.shape[:2]
         res = cv2.matchTemplate(缩放后图片, template, cv2.TM_CCOEFF_NORMED)
         _, max_val, _, max_loc = cv2.minMaxLoc(res)
-        print(f'图像随机位置点击配置文件函数模板匹配置信度：{max_val}')
+        log.debug(f'图像随机位置点击配置文件函数模板匹配置信度：{max_val}')
         if max_val >= threshold:
             # 获取匹配区域的左上角 (x, y)
             x1, y1 = max_loc
@@ -459,7 +459,10 @@ try:
             # 随机生成坐标
             rand_x = random.randint(x_min, x_max)
             rand_y = random.randint(y_min, y_max)
-            zuobiao_dict=(rand_x,rand_y)
+            x_相对坐标=x相对坐标(rand_x)
+            y_相对坐标=y相对坐标(rand_y)
+            zuobiao_dict=(x_相对坐标,y_相对坐标)
+            log.debug(f'图像随机位置点击配置文件函数生成的随机坐标：{zuobiao_dict}')
             adb_click(zuobiao_dict)
 
         return None
