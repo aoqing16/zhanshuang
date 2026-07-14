@@ -13,7 +13,7 @@ yolo关卡识别数据集/
 
 # 日志
 *.log
-
+logs
 # 打包文件
 dist/
 build/
