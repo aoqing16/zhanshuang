@@ -15,6 +15,7 @@ print(项目根目录路径)
 标识符文件夹路径=os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi')
 json配置文件路径=os.path.join(项目根目录路径, "ziyuanwenjian", "config.json")
 异常捕获文件夹路径= os.path.join(项目根目录路径, "exception_handling")
+运行日志记录文件夹路径=os.path.join(项目根目录路径, "log")
 yolo模型路径={"分类模型": os.path.join(项目根目录路径, "model", '分类模型.pt'),
             "目标检测模型": os.path.join(项目根目录路径, "model", '目标检测模型.pt'),
             "地标检测模型": os.path.join(项目根目录路径, "model", 'best.pt'),

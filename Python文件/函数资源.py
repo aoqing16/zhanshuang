@@ -13,6 +13,7 @@ import config
 import cv2
 import numpy as np
 import logging
+from datetime import datetime
 ###定义全局变量，并进行初始化赋值
 灵敏度=None
 # 1. 定义日志的输出格式
@@ -20,28 +21,51 @@ import logging
 时间格式 = '%H:%M:%S'
 
 # =============================================================
-# 🛠️ 丢弃 basicConfig，改成方法二：创建你自己的专属对讲机
+# 📁 动态 Session 文件夹构建（核心目录结构）
 # =============================================================
 
-# 💥 第一步：给你的对讲机起个名字（比如叫 log），并设置允许 DEBUG 级别
+# 获取脚本启动时的物理时间（精确到秒，如 20260714_234046）
+启动时间 = datetime.now().strftime('%Y%m%d_%H%M%S')
+
+# 🌟 核心升级：构建二级文件夹路径 => ./logs/20260714_234046/
+# 将这个变量作为全局变量，供你后续的“异常捕获模块”直接调用！
+当前运行目录 = os.path.join("./logs", 启动时间)
+os.makedirs(当前运行目录, exist_ok=True)
+
+# 具体的运行日志物理路径 => ./logs/20260714_234046/run.log
+日志文件路径 = os.path.join(当前运行目录, "run.log")
+
+# =============================================================
+# 🛠️ 装配专属对讲机
+# =============================================================
+
 log = logging.getLogger("战双RPA")
 log.setLevel(logging.DEBUG)
 
-# 第二步：创建一个只属于这个对讲机的大喇叭，并指定 sys.stdout（让白变白）
-console_handler = logging.StreamHandler(sys.stdout)
+# 挂载文件记录仪（物理死账本）
+file_handler = logging.FileHandler(日志文件路径, encoding='utf-8')
+file_handler.setLevel(logging.DEBUG)
 
-# 第三步：把你的格式和时间传给这个大喇叭
+# 创建控制台大喇叭（白变白）
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setLevel(logging.INFO)  # 控制台 INFO 保持清爽
+
+# 绑定排版格式
 formatter = logging.Formatter(fmt=日志格式, datefmt=时间格式)
 console_handler.setFormatter(formatter)
+file_handler.setFormatter(formatter)
 
-# 第四步：把大喇叭装到你的对讲机上
-if not log.handlers:  # 防止重复添加喇叭
+# 喇叭和记录仪组合上机
+if not log.handlers:
     log.addHandler(console_handler)
+    log.addHandler(file_handler)
 
 # =============================================================
-# 🧪 再次测试（🚨 注意：以后全部用 log.xxx，不用 logging.xxx）
+# 🧪 测试输出
 # =============================================================
-log.info('模型加载中')
+log.info('🚀 脚本 Session 初始化成功！')
+log.info(f'💾 本次运行日志将写入: {日志文件路径}')
+log.debug('YOLO 模型加载中...')
 try:
     副本首页模型= YOLO(config.yolo模型路径.get('目标检测模型'),task='detect')#目标检测模型
     分类模型 = YOLO(config.yolo模型路径.get('分类模型'), task='classify')#分类模型
@@ -156,7 +180,7 @@ try:
     import time
 
 
-    def 异常捕获截图(文件夹路径=config.异常捕获文件夹路径) -> str:
+    def 异常捕获截图(文件夹路径=当前运行目录) -> str:
         """
         单一职责：捕获当前屏幕，并以当前时间戳命名保存到指定文件夹中。
         返回保存后的图片绝对路径。
@@ -174,7 +198,7 @@ try:
         # 3. 核心执行：截图并保存
         img = 截图()
         cv2.imwrite(完整路径,img)
-        log.debug('已保存图片至Exception handing文件夹')
+        log.debug(f'已保存图片至{当前运行目录}文件夹')
 
         # 4. 返回路径供外界打日志或排查使用
     def 异常时操作():
@@ -2168,5 +2192,4 @@ except Exception as e:
     traceback.print_exc()
     input("\n👉 按回车键退出程序...")
 if __name__ == '__main__':
-    if 图像是否存在从配置文件中获取文件路径('主页_任务'):
-        log.debug('检测到主页任务按钮，正在点击')
+    异常捕获截图()
