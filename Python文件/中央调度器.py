@@ -11,11 +11,9 @@ def yolo页面检测子线程():
             result = yolo页面检测主函数()
             with data_lock:
                 共享变量.latest_result = result
-                # print(f'更新页面检测结果：{共享变量.latest_result}')
+                log.debug(f'更新页面检测结果：{共享变量.latest_result}')
 
             time.sleep(0.1)  # 适当休息，避免识别线程跑得太快把CPU吃满
-    # except KeyboardInterrupt:
-    #     print('关闭子线程')
 def 截图子线程():
     监听按键截图()
 线程初始化=0
@@ -32,8 +30,8 @@ def 页面匹配():
             线程初始化+=1
         处于副本内()
 
-        print('已退出副本内状态')
-    print(共享变量.latest_result)
+        log.info('已退出副本内状态')
+    log.info(f'最新页面检测结果：{共享变量.latest_result}')
 
     if 共享变量.latest_result == '副本首页':
         副本首页()
@@ -123,9 +121,9 @@ if __name__ == '__main__':
         while True:
             页面匹配()
     except KeyboardInterrupt:
-        print('脚本主动结束')
+        log.info('脚本主动结束')
     except Exception as e:
-        print("\n❌ 脚本崩溃！报错信息已自动记录至本地 [崩溃日志.txt]")
+        log.error("\n❌ 脚本崩溃！报错信息已自动记录至本地 [崩溃日志.txt]")
 
         # 自动把报错塞进本地文件，哪怕窗口关了，账本还在！
         with open("崩溃日志-中央调度器py.txt", "a", encoding="utf-8") as f:

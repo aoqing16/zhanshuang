@@ -66,16 +66,16 @@ try:
     def 自动连接战双模拟器():
         # 1. 成功接住你刚刚获取到的 adb 路径
         adb_cmd = 获取ADB可执行路径()
-        print(f"📡 成功锁定 ADB 核心组件，路径: {adb_cmd}")
+        log.info(f"📡 成功锁定 ADB 核心组件，路径: {adb_cmd}")
 
-        print("🔄 正在初始化 ADB 后台服务...")
+        log.info("🔄 正在初始化 ADB 后台服务...")
         # 2. 强行启动 ADB 服务（用双引号把路径包起来，防止路径里有空格报错）
         subprocess.run(f'"{adb_cmd}" start-server', shell=True, capture_output=True)
 
         # 3. 🎯 盲撞唤醒：把市面上最常见的几个默认端口全部 connect 一遍
         # 这一步能把那些“隐身/没反应”的模拟器强行拉上线
         常见端口 = [5554, 5555, 16384, 21503, 62001]
-        print("🕵️ 正在全盘扫描并唤醒本地模拟器通道...")
+        log.info("🕵️ 正在全盘扫描并唤醒本地模拟器通道...")
         for port in 常见端口:
             subprocess.run(f'"{adb_cmd}" connect 127.0.0.1:{port}', shell=True, capture_output=True)
 
@@ -87,7 +87,7 @@ try:
             result = subprocess.run(f'"{adb_cmd}" devices', shell=True, capture_output=True, text=True)
             lines = result.stdout.strip().split('\n')
         except Exception as e:
-            print(f"❌ 读取设备列表失败: {e}")
+            log.info(f"❌ 读取设备列表失败: {e}")
             return None
 
         # 5. 解析设备列表，把真正合法的地址挑出来
@@ -101,40 +101,40 @@ try:
         设备数量 = len(活跃设备清单)
 
         if 设备数量 == 0:
-            print("\n❌ [错误] 翻遍了电脑，没发现任何运行中的模拟器！")
-            print("💡 解决方案：请先打开你的雷电或MuMu模拟器，然后再运行本测试。")
+            log.info("\n❌ [错误] 翻遍了电脑，没发现任何运行中的模拟器！")
+            log.info("💡 解决方案：请先打开你的雷电或MuMu模拟器，然后再运行本测试。")
             return None
 
         elif 设备数量 == 1:
             # ✨ 针对 95% 的情况：单开无感秒连
             目标地址 = 活跃设备清单[0]
-            print(f"\n🎉 [唯一匹配] 成功锁定模拟器通道: {目标地址}")
-            print("🚀 正在为您建立 `uiautomator2` 战斗连接...")
+            log.info(f"\n🎉 [唯一匹配] 成功锁定模拟器通道: {目标地址}")
+            log.info("🚀 正在为您建立 `uiautomator2` 战斗连接...")
             try:
                 # 🌟【大结局】拿着抓到的地址，直接塞给 u2 连上！
                 d = u2.connect(目标地址)
                 return d
             except Exception as e:
-                print(f"❌ 建立连接失败: {e}")
+                log.error(f"❌ 建立连接失败: {e}")
                 return None
 
         else:
             # ✨ 针对多开党：交出选择权，做个清晰直观的菜单
-            print("\n⚠️ [多开检测] 侦测到您的电脑同时运行了多个模拟器窗口：")
-            print("-" * 45)
+            log.info("\n⚠️ [多开检测] 侦测到您的电脑同时运行了多个模拟器窗口：")
+            log.info("-" * 45)
             for 序号, 地址 in enumerate(活跃设备清单):
                 类型 = "雷电默认" if "5554" in 地址 else ("网易MuMu" if "16384" in 地址 else "其他多开")
-                print(f" 🌟 [{序号}]  地址: {地址}  ({类型})")
-            print("-" * 45)
+                log.info(f" 🌟 [{序号}]  地址: {地址}  ({类型})")
+            log.info("-" * 45)
 
             while True:
                 选择 = input("👉 请输入前方方括号内的数字选择你要挂战双的窗口: ").strip()
                 if 选择.isdigit() and int(选择) < 设备数量:
                     目标地址 = 活跃设备清单[int(选择)]
                     break
-                print("❌ 输入有误，请确认输入数字是否正确！")
+                log.info("❌ 输入有误，请确认输入数字是否正确！")
 
-            print(f"\n🚀 正在对接您选定的模拟器: {目标地址} ...")
+            log.info(f"\n🚀 正在对接您选定的模拟器: {目标地址} ...")
             return u2.connect(目标地址)
 
 
@@ -143,9 +143,9 @@ try:
     else:
         d=u2.connect('127.0.0.1:16384')
     if d:
-        print('已成功连接到模拟器，正在启动脚本')
+        log.info('已成功连接到模拟器，正在启动脚本')
     else:
-        print('模拟器连接错误')
+        log.info('模拟器连接错误')
 
     def 截图():
         img = d.screenshot(format='opencv')
@@ -241,10 +241,10 @@ try:
         return filtered_result
 
     设备宽度, 设备高度 = d.window_size()
-    print(f'设备宽度：{设备宽度},设备高度{设备高度}')
+    log.info(f'设备宽度：{设备宽度},设备高度{设备高度}')
     x缩放系数 = float(设备宽度 / 2560)
     y缩放系数 = float(设备高度 / 1440)
-    print(f'x缩放系数{x缩放系数},y缩放系数{y缩放系数}')
+    log.info(f'x缩放系数{x缩放系数},y缩放系数{y缩放系数}')
 
     def 相对面积(s):
         s=int(s*x缩放系数*y缩放系数)
@@ -265,33 +265,9 @@ try:
         """
         y = int(y * y缩放系数)
         return y
-
-    def 夹角计算(arrow_x, arrow_y):
-        """根据地标/箭头坐标，计算其相对于屏幕正前方的顺时针夹角 (0° - 360°)"""
-        # 1. 获取屏幕中心（也就是角色在屏幕上的物理坐标）
-        center_x = 设备宽度 // 2
-        center_y = 设备高度
-
-        # 2. 计算地标相对于屏幕中心的横向、纵向位移
-        dx = arrow_x - center_x
-        dy = arrow_y - center_y  # 🚨 记住：屏幕坐标系中，向下为正，向上为负
-
-        # 3. 祭出数学大招：计算出以“水平向右”为 0° 的原始弧度，并转成直观的角度
-        # math.atan2 接收的顺序是 (y, x)
-        raw_radian = math.atan2(dy, dx)
-        raw_angle = math.degrees(raw_radian)  # 此时范围在 -180° 到 180° 之间
-
-        # 4. 【核心转换】：把基准面扭转成“正上方为 0°，顺时针增加”
-        # raw_angle 加上 90 度，就能把 0° 从右边拉到顶端。
-        # 使用 % 360 运算可以把所有负数角度（比如左半边）优雅地修正到 0~360° 范围内。
-        game_angle = (raw_angle + 90) % 360
-
-        # 顺便四舍五入保留一位小数，看着舒服
-        return round(game_angle, 1)
-
     def 地标检测():
         地标坐标= yolo检测扩展版(model=地标检测模型, 检测标签="地标")
-        print(地标坐标)
+        log.info(f'地标坐标: {地标坐标}')
         return 地标坐标
 
 
@@ -401,7 +377,7 @@ try:
         template = cv2.imread(TEMPLATE_PATH, flag)
 
         if template is None:
-            print(f"错误：无法读取模板图片 {TEMPLATE_PATH}")
+            log.error(f"错误：无法读取模板图片 {TEMPLATE_PATH}")
             return False
 
         # 1.1 获取并处理屏幕截图
@@ -436,7 +412,7 @@ try:
         TEMPLATE_PATH = config.图片标识符清单.get(key)
         template = cv2.imread(TEMPLATE_PATH, cv2.IMREAD_COLOR)
         if template is None:
-            print(f"错误：无法读取模板图片 {TEMPLATE_PATH}")
+            log.error(f"错误：无法读取模板图片 {TEMPLATE_PATH}")
             return None
         img = d.screenshot(format='opencv')
         缩放后图片 = 缩放图片至基准尺寸(img)
@@ -505,7 +481,7 @@ try:
         random_y = random.randint(min_y, max_y)
 
         目标坐标 = (random_x, random_y)
-        print(f"🎯 [区域防检测点击] 规划区域:({x1},{y1})->({x2},{y2})，实际随机落点: {目标坐标}")
+        log.debug(f"🎯 [区域防检测点击] 规划区域:({x1},{y1})->({x2},{y2})，实际随机落点: {目标坐标}")
 
         # 执行你原有的 adb 点击函数
         adb_click(目标坐标)
@@ -569,7 +545,7 @@ try:
         :return: 缩放后的图片对象
         """
         if img is None:
-            print("❌ 错误：传入的图片对象为空，请检查路径或截图是否成功！")
+            log.error("❌ 错误：传入的图片对象为空，请检查路径或截图是否成功！")
             return None
 
         # 获取图片当前的实际高度和宽度
@@ -585,11 +561,16 @@ try:
             img, (目标宽, 目标高), interpolation=cv2.INTER_CUBIC
         )
 
-        # print(f"🔄 图片已成功从 {当前宽}x{当前高} 缩放至 {目标宽}x{目标高}")
+        # log.debug(f"🔄 图片已成功从 {当前宽}x{当前高} 缩放至 {目标宽}x{目标高}")
         return 缩放后的图片
     def yolo页面检测主函数():
+        """
+        用于检测当前游戏画面的页面类型，并进行连续帧过滤
+        返回页面名
+        :return:
+        """
         ll=yolo页面识别()
-        # print(f'yolo模型识别结果：【{ll[0]}】    置信度：{ll[1]}')
+        # log.debug(f'yolo模型识别结果：【{ll[0]}】    置信度：{ll[1]}')
         过滤结果=yolo过滤器(ll)
         return 过滤结果
     def 怪物名检测(roi=config.怪物名roi, pixel_threshold=40,img_a=None):
@@ -605,7 +586,7 @@ try:
         else:
             img = img_a
         if img is None:
-            print("❌ [血条检测] 传入的图片为空！")
+            log.error("❌ [血条检测] 传入的图片为空！")
             return False
 
         # 1. 解析坐标
@@ -619,7 +600,7 @@ try:
         y2_safe = max(0, min(y2, img_h))
 
         if x1_safe >= x2_safe or y1_safe >= y2_safe:
-            print(f"⚠️ [血条检测] ROI 区域坐标非法: ({x1},{y1})->({x2},{y2})")
+            log.warning(f"⚠️ [血条检测] ROI 区域坐标非法: ({x1},{y1})->({x2},{y2})")
             return False
 
         # 2. 裁剪血条区域 ROI
@@ -640,7 +621,7 @@ try:
         matching_pixels = cv2.countNonZero(mask)
 
         # 7. 打印详细调试信息，方便你调参
-        # print(f"📊 [血条检测调试] 目标区域符合条件的像素数: {matching_pixels} (目标阈值: {pixel_threshold})")
+        log.debug(f"📊 [怪物名检测] 目标区域符合条件的像素数: {matching_pixels} (目标阈值: {pixel_threshold})")
 
         if matching_pixels > pixel_threshold:
             return matching_pixels
@@ -658,7 +639,7 @@ try:
         """
         img=缩放图片至基准尺寸(截图())
         if img is None:
-            print("❌ [血条检测] 传入的图片为空！")
+            log.error("❌ [血条检测] 传入的图片为空！")
             return False
 
         # 1. 解析坐标
@@ -672,7 +653,7 @@ try:
         y2_safe = max(0, min(y2, img_h))
 
         if x1_safe >= x2_safe or y1_safe >= y2_safe:
-            print(f"⚠️ [血条检测] ROI 区域坐标非法: ({x1},{y1})->({x2},{y2})")
+            log.warning(f"⚠️ [血条检测] ROI 区域坐标非法: ({x1},{y1})->({x2},{y2})")
             return False
 
         # 2. 裁剪血条区域 ROI
@@ -693,7 +674,7 @@ try:
         matching_pixels = cv2.countNonZero(mask)
 
         # 7. 打印详细调试信息，方便你调参
-        # print(f"📊 [血条检测调试] 目标区域符合条件的像素数: {matching_pixels} (目标阈值: {pixel_threshold})")
+        log.debug(f"📊 [血条检测调试] 目标区域符合条件的像素数: {matching_pixels} (目标阈值: {pixel_threshold})")
 
         if matching_pixels > pixel_threshold:
             return True,matching_pixels
@@ -732,7 +713,7 @@ try:
         # 计算绝对变化幅度（拿当前值和上一次记录的值做减法）
         变化幅度 = abs(当前像素值 - _上次的像素值)
 
-        # print(f"📊 [变化率雷达] 当前像素:{当前像素值} | 上次像素:{_上次的像素值} | 差值:{变化幅度}")
+        log.debug(f"📊 [变化率雷达] 当前像素:{当前像素值} | 上次像素:{_上次的像素值} | 差值:{变化幅度}")
 
         # 💡 核心校验：把当前值覆盖存入记忆，供下一次循环对比
         _上次的像素值 = 当前像素值
@@ -788,7 +769,7 @@ try:
         return 寻敌
     def 寻敌操作函数():
         if 寻敌检测主函数():
-            print('执行寻敌操作')
+            log.info('执行寻敌操作')
             寻敌()
             time.sleep(5)
     def 非阻塞式前移摇杆(最大时长=1):
@@ -797,7 +778,7 @@ try:
         time.sleep(0.05)
         d.touch.move(x相对坐标(371), y相对坐标(848))
         start_time=time.time()
-        print('已开始移动，开始计时')
+        log.info('已开始移动，开始计时')
         try:
             while time.time()-start_time<最大时长:
                 start=time.time()
@@ -806,12 +787,12 @@ try:
                     break
                 img_yolo = 图像处理(img, "副本_战斗交互按钮")
                 if yolo检测扩展版(model=地标检测模型, 检测标签="副本—战斗交互按钮", img_a=img_yolo):
-                    print('检测到交互按钮，默认已实现寻路效果')
+                    log.info('检测到交互按钮，默认已实现寻路效果')
                     区域内随机坐标点击(x相对坐标(2294), x相对坐标(2418), y相对坐标(966), y相对坐标(1086))
                     time.sleep(1.5)
                     任意中断信号 = True
                     break
-                print(f'跑完一轮检测耗时：{time.time() - start}')
+                log.debug(f'跑完一轮检测耗时：{time.time() - start}')
                 time.sleep(0.005)
         finally:
             d.touch.up(x相对坐标(371), y相对坐标(848))
@@ -851,12 +832,12 @@ try:
         布尔值=False
         if 终点标识符检测结果:
             布尔值=True
-        print(f'终点标识符检测结果{终点标识符检测结果}')
+        log.debug(f'终点标识符检测结果{终点标识符检测结果}')
         连续性过滤 = 连续性检测(布尔值, 1)
-        # print(f'连续性过滤后结果{连续性过滤}')
+        # log.debug(f'连续性过滤后结果{连续性过滤}')
         if 连续性过滤:
             防遮挡=1
-            print(f'终点标识符坐标为：{终点标识符检测结果}')
+            log.debug(f'终点标识符坐标为：{终点标识符检测结果}')
             终点标识符检测结果全局=True
             target_x, target_y = 终点标识符检测结果
 
@@ -865,24 +846,24 @@ try:
 
             if 偏差值 > x相对坐标(150):
                 随机小幅度划屏((x相对坐标(1278),y相对坐标(692)),'right',x相对坐标(20))
-                print("➡️ 标识符偏右，控制摇杆往右前方推，或者向右微调视角")
+                log.info("➡️ 标识符偏右，控制摇杆往右前方推，或者向右微调视角")
                 time.sleep(0.5)
                 # 你的摇杆控制逻辑...
             elif 偏差值 < -x相对坐标(150):
                 随机小幅度划屏((x相对坐标(1278), y相对坐标(692)),'left',x相对坐标(20))
-                print("⬅️ 标识符偏左，控制摇杆往左前方推，或者向左微调视角")
+                log.info("⬅️ 标识符偏左，控制摇杆往左前方推，或者向左微调视角")
                 time.sleep(0.5)
                 # 你的摇杆控制逻辑...
             else:
-                print("⬆️ 已经对准目标！返回True")
+                log.info("⬆️ 已经对准目标！返回True")
                 # 寻路操作()
                 return True
         elif 连续性过滤 is False:
             if 防遮挡==1:
                 防遮挡=0
-                print('检测到标识符出现后又消失，默认已对准')
+                log.info('检测到标识符出现后又消失，默认已对准')
                 return True
-            print('未检测到终点标识符')
+            log.info('未检测到终点标识符')
     def 寻路视角定位():
         """
         寻路视角定位，负责检测画面上是否存有标识符，如果存在，会对准视角，
@@ -942,7 +923,7 @@ try:
                 break
             img_yolo = 图像处理(img, "副本_战斗交互按钮")
             if yolo检测扩展版(model=地标检测模型, 检测标签="副本—战斗交互按钮", img_a=img_yolo):
-                print('检测到交互按钮，默认已实现寻路效果')
+                log.info('检测到交互按钮，默认已实现寻路效果')
                 区域内随机坐标点击(x相对坐标(2294), x相对坐标(2418), y相对坐标(966), y相对坐标(1086))
                 time.sleep(1.5)
                 任意中断信号 = True
@@ -952,31 +933,31 @@ try:
                 区域内随机坐标点击(x相对坐标(1567), x相对坐标(1721), y相对坐标(1200), y相对坐标(1247))
                 time.sleep(0.1)
                 区域内随机坐标点击(x相对坐标(2206), x相对坐标(2312), y相对坐标(1071), y相对坐标(1183))
-                print('检测到触发战斗对话页，寻路结束')
+                log.info('检测到触发战斗对话页，寻路结束')
                 任意中断信号 = True
 
                 break
 
             if hsv模板匹配('副本-剧情对话页跳过', config.副本_剧情对话页跳过hsv范围lower,
                            config.副本_剧情对话页跳过hsv范围upper, img_a=img):
-                print('检测到剧情对话页，正在退出寻路')
+                log.info('检测到剧情对话页，正在退出寻路')
                 任意中断信号 = True
 
                 break
             if hsv模板匹配('副本-战斗结算', config.副本_战斗结算hsv范围lower, config.副本_战斗结算hsv范围upper,
                            img_a=img):
-                print('检测到战斗结算页，正在退出寻路')
+                log.info('检测到战斗结算页，正在退出寻路')
                 任意中断信号 = True
 
                 break
             if 图像是否存在从配置文件中获取文件路径('副本-战斗结算', gray_mode=True, img_a=img):
-                print('检测到意识重启页，正在退出寻路')
+                log.info('检测到意识重启页，正在退出寻路')
                 任意中断信号 = True
 
                 break
             血条像素值 = 怪物名检测(img_a=img)
             if 血条像素值 > 500:
-                print('检测到怪物名，正在退出寻路')
+                log.info('检测到怪物名，正在退出寻路')
                 任意中断信号 = True
 
                 break
@@ -986,7 +967,7 @@ try:
                 break
         else:
             防卡墙移动()
-        print('正在初始化终点标识符和地标和中断信号全局变量')
+        log.info('正在初始化终点标识符和地标和中断信号全局变量')
         地标是否存在=False
         终点标识符检测结果全局=None
         任意中断信号=False
@@ -997,7 +978,7 @@ try:
         time.sleep(0.5)
         闪避()
         if 终点标识符检测结果全局:
-            print('卡墙，正在二次校验标识符方向')
+            log.info('卡墙，正在二次校验标识符方向')
             for i in range(1,21):
                 if 终点标识符是否存在():
                     for j in range(1,21):
@@ -1006,7 +987,7 @@ try:
                             if result:
                                 break
                         if 终点标识符检测():
-                            print('已重新校验方向')
+                            log.info('已重新校验方向')
                             break
                     break
                 else:
@@ -1014,15 +995,15 @@ try:
                     time.sleep(0.5)
 
             else:
-                print('已超过最大重试次数，仍未检测到标识符')
+                log.info('已超过最大重试次数，仍未检测到标识符')
         elif 地标是否存在:
-            print('卡墙，正在二次校验地标方向')
+            log.info('卡墙，正在二次校验地标方向')
             for i in range(1, 21):
                 if 任意中断信号:
                     break
                 if 地标存在检测():
                     if 地标视角校准():
-                        print('已重新校验方向')
+                        log.info('已重新校验方向')
                         break
                 else:
                     随机小幅度划屏((x相对坐标(1278), y相对坐标(692)), 'left', x相对坐标(100))
@@ -1042,7 +1023,7 @@ try:
                 break
             img_yolo = 图像处理(img, "副本_战斗交互按钮")
             if yolo检测扩展版(model=地标检测模型, 检测标签="副本—战斗交互按钮", img_a=img_yolo):
-                print('检测到交互按钮，默认已实现寻路效果')
+                log.info('检测到交互按钮，默认已实现寻路效果')
                 区域内随机坐标点击(x相对坐标(2294), x相对坐标(2418), y相对坐标(966), y相对坐标(1086))
                 time.sleep(1.5)
                 任意中断信号 = True
@@ -1052,41 +1033,41 @@ try:
                 区域内随机坐标点击(x相对坐标(1567), x相对坐标(1721), y相对坐标(1200), y相对坐标(1247))
                 time.sleep(0.1)
                 区域内随机坐标点击(x相对坐标(2206), x相对坐标(2312), y相对坐标(1071), y相对坐标(1183))
-                print('检测到触发战斗对话页，寻路结束')
+                log.info('检测到触发战斗对话页，寻路结束')
                 任意中断信号 = True
 
                 break
 
             if hsv模板匹配('副本-剧情对话页跳过', config.副本_剧情对话页跳过hsv范围lower,
                            config.副本_剧情对话页跳过hsv范围upper, img_a=img):
-                print('检测到剧情对话页，正在退出寻路')
+                log.info('检测到剧情对话页，正在退出寻路')
                 任意中断信号 = True
 
                 break
             if hsv模板匹配('副本-战斗结算', config.副本_战斗结算hsv范围lower, config.副本_战斗结算hsv范围upper,
                            img_a=img):
-                print('检测到战斗结算页，正在退出寻路')
+                log.info('检测到战斗结算页，正在退出寻路')
                 任意中断信号 = True
 
                 break
             if 图像是否存在从配置文件中获取文件路径('副本-战斗结算', gray_mode=True, img_a=img):
-                print('检测到意识重启页，正在退出寻路')
+                log.info('检测到意识重启页，正在退出寻路')
                 任意中断信号 = True
 
                 break
             血条像素值 = 怪物名检测(img_a=img)
             if 血条像素值 > 500:
-                print('检测到怪物名，正在退出寻路')
+                log.info('检测到怪物名，正在退出寻路')
                 任意中断信号 = True
 
                 break
             if 移动卡墙检测():
                 卡墙时操作()
-                print('已执行卡墙时操作')
+                log.info('已执行卡墙时操作')
                 最大重试次数-=1
             else:
                 if 终点标识符检测结果全局:
-                    print('非卡墙，正在二次校验标识符方向')
+                    log.info('非卡墙，正在二次校验标识符方向')
                     for i in range(1, 21):
                         if 任意中断信号:
                             break
@@ -1097,7 +1078,7 @@ try:
                                     if result:
                                         break
                                 if 终点标识符检测():
-                                    print('已重新校验方向')
+                                    log.info('已重新校验方向')
                                     break
                             break
                         else:
@@ -1116,7 +1097,7 @@ try:
                             time.sleep(0.5)
 
                 移动次数+=1
-        print('已退出移动')
+        log.info('已退出移动')
 
 
     def 移动卡墙检测(x1=657, y1=190, x2=2158, y2=494, threshold_ratio=0.1):
@@ -1165,11 +1146,11 @@ try:
         change_rate = changed_pixels / total_pixels
 
         # 🔍 调试日志，方便你精准校准不同区域的动态阈值
-        print(f"DEBUG: 区域({x1},{y1})->({x2},{y2}) 流变比例: {change_rate * 100:.2f}%")
+        log.debug(f"DEBUG: 区域({x1},{y1})->({x2},{y2}) 流变比例: {change_rate * 100:.2f}%")
 
         # 7. ⚖️ 判定
         if change_rate < threshold_ratio:
-            print(f"🚨 [卡墙判定] 指定区域静态重合率过高！流变仅 {change_rate * 100:.2f}%，判定为卡墙！")
+            log.info(f"🚨 [卡墙判定] 指定区域静态重合率过高！流变仅 {change_rate * 100:.2f}%，判定为卡墙！")
             return True
 
         return False
@@ -1182,39 +1163,39 @@ try:
             寻敌次数+=1
 
             寻敌()
-            print('执行寻敌操作')
-            print('寻敌次数加1')
+            log.info('执行寻敌操作')
+            log.info('寻敌次数加1')
         # elif 寻敌检测结果 is False:
-        #     print('不需要寻敌，重置寻敌次数')
+        #     log.info('不需要寻敌，重置寻敌次数')
         #     寻敌次数 = 0
         if 寻敌次数>=3:
             with 共享变量.寻路和战斗锁:
-                print('寻敌无效，执行寻路中……')
-                print('执行寻路操作,重置寻敌次数')
+                log.info('寻敌无效，执行寻路中……')
+                log.info('执行寻路操作,重置寻敌次数')
                 寻敌次数 = 0
                 寻路主函数()
-            print('寻路操作执行完毕,正在初始化变量')
+            log.info('寻路操作执行完毕,正在初始化变量')
 
     def 寻敌子线程():
-        print('子线程运行中')
+        log.info('子线程运行中')
         while True:
             while not 共享变量.停止寻敌信号:
-                # print('寻敌寻路中')
+                # log.info('寻敌寻路中')
                 寻路寻敌检测()
                 time.sleep(0.005)
             time.sleep(0.5)
-        print('寻敌子线程已结束')
+        log.info('寻敌子线程已结束')
     def ui变化检测(标识符,timeout=5,interval=0.1):
         start_time = time.time()
         while time.time() - start_time < timeout:
             if 共享变量.latest_result!=标识符:
-                print('合理合理退出合理退出合理退出合理退出合理退出合理退出退出')
+                log.info('合理合理退出合理退出合理退出合理退出合理退出合理退出退出')
                 end_time=time.time()
                 time_time = end_time - start_time
-                print(f'合理退出合理退出合理退出合理退出合理退出时间{time_time}')
+                log.info(f'合理退出合理退出合理退出合理退出合理退出时间{time_time}')
                 return True
             time.sleep(interval)
-        print('硬等待硬等待硬等待硬等待硬等待硬等待硬等待硬等待硬等待硬等待硬等待硬等待')
+        log.info('硬等待硬等待硬等待硬等待硬等待硬等待硬等待硬等待硬等待硬等待硬等待硬等待')
         return False
 
 
@@ -1227,7 +1208,7 @@ try:
         置信度: 置信度阈值
         检测标签: 需要匹配的目标标签名称
         """
-        print(
+        log.debug(
             f"\n[YOLO] 🔍 开启新一轮检测 | 目标标签:【{检测标签}】| 设定置信度阈值: {置信度}"
         )
 
@@ -1321,7 +1302,7 @@ try:
         hsv_upper = np.array(hsv_upper)
         template = cv2.imread(config.图片标识符清单.get(key), cv2.IMREAD_COLOR)
         if template is None:
-            print(f"警告：无法加载模板 {key}")
+            log.warning(f"警告：无法加载模板 {key}")
             return False
 
         # 🌟 获取原模板的宽度(w)和高度(h)，用于后续计算中心点
@@ -1347,7 +1328,7 @@ try:
         _, max_val, _, max_loc = cv2.minMaxLoc(res)
 
         # 打印日志以便调试
-        # print(f"DEBUG: 匹配度 {max_val:.4f}")
+        log.debug(f"【hsv模板匹配获取坐标】匹配度 {max_val:.4f}")
 
         # 6. 判断并返回中心坐标
         if max_val >= threshold:
@@ -1372,7 +1353,7 @@ try:
         hsv_upper=np.array(hsv_upper)
         template = cv2.imread(config.图片标识符清单.get(key), cv2.IMREAD_COLOR)
         if template is None:
-            print(f"警告：无法加载模板 {key}")
+            log.warning(f"警告：无法加载模板 {key}")
             return False
 
         template_gray = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
@@ -1398,14 +1379,14 @@ try:
         _, max_val, _, _ = cv2.minMaxLoc(res)
 
         # 打印日志以便调试
-        print(f"DEBUG: 匹配度 {max_val:.4f}")
+        log.debug(f"【hsv模板匹配】匹配度 {max_val:.4f}")
 
         return max_val >= threshold
     def 战斗场景检测():
         battle_hsv_min =[0, 0, 244] # 根据你的实际场景设置
         battle_hsv_max =[179, 8, 255]
         战斗场景检测=hsv模板匹配('战斗标识符',battle_hsv_min,battle_hsv_max)
-        print(f'战斗场景检测{战斗场景检测}')
+        log.debug(f'战斗场景检测{战斗场景检测}')
         if 战斗场景检测:
             return True
         else:
@@ -1557,7 +1538,7 @@ try:
         pixel_count = cv2.countNonZero(mask)
 
         # 6. 判断并返回
-        print(f'战斗标识符像素点{pixel_count}')
+        log.debug(f'【战斗标识检测】标识符像素点{pixel_count}')
         return 1 if pixel_count > 500 else None
 
 
@@ -1571,7 +1552,7 @@ try:
                 time.sleep(1.5)
     def 章节位置初始化():
         for i in range(6):
-            print(f"正在进行第 {i + 1} 次向右滑动...")
+            log.info(f"正在进行第 {i + 1} 次向右滑动...")
 
             d.shell(f"input swipe {x相对坐标(1080)} {y相对坐标(720)} {x相对坐标(1480)} {y相对坐标(720)} 100")
             time.sleep(1)
@@ -1595,7 +1576,7 @@ try:
             h, w = current_img.shape[:2]
             crop_img = current_img[max(0, y1):min(h, y2), max(0, x1):min(w, x2)]
             if crop_img.size == 0:
-                print("⚠️ 传入的 ROI 区域大小为 0，跳过检测。")
+                log.info("⚠️ 传入的 ROI 区域大小为 0，跳过检测。")
                 return False
         else:
             crop_img = current_img
@@ -1607,29 +1588,29 @@ try:
         for name, path in blacklist_dict.items():
             # 防御性编程：确保文件路径存在
             if not os.path.exists(path):
-                print(f"⚠️ 警告：黑名单文件不存在，已跳过：{path}")
+                log.warning(f"⚠️ 警告：黑名单文件不存在，已跳过：{path}")
                 continue
 
             # 读取模板并转为灰度图
             template = cv2.imread(path, 0)
             if template is None:
-                print(f"⚠️ 错误：无法读取图片（可能格式损坏）：{path}")
+                log.error(f"⚠️ 错误：无法读取图片（可能格式损坏）：{path}")
                 continue
 
             # 检查模板图是否比裁剪后的目标图还要大，如果大则无法匹配
             if template.shape[0] > gray_crop.shape[0] or template.shape[1] > gray_crop.shape[1]:
-                # print(f"ℹ️ 模板 [{name}] 比指定检测区域还大，无法匹配，跳过。")
+                log.info(f"ℹ️ 模板 [{name}] 比指定检测区域还大，无法匹配，跳过。")
                 continue
 
             # 执行模板匹配
             res = cv2.matchTemplate(gray_crop, template, cv2.TM_CCOEFF_NORMED)
             _, max_val, _, _ = cv2.minMaxLoc(res)
 
-            print(f"🔍 正在比对黑名单标签 [{name}] ... 当前最高匹配度: {max_val:.4f}")
+            log.info(f"🔍 正在比对黑名单标签 [{name}] ... 当前最高匹配度: {max_val:.4f}")
 
             # 4. 只要有一个匹配成功，立刻返回 True
             if max_val >= threshold:
-                print(f"🚫 命中黑名单！成功检测到标签：[{name}]，匹配度({max_val:.4f}) >= 阈值({threshold})")
+                log.info(f"🚫 命中黑名单！成功检测到标签：[{name}]，匹配度({max_val:.4f}) >= 阈值({threshold})")
                 return True
 
         # 5. 循环结束，一个都没对上，返回 False
@@ -1652,7 +1633,7 @@ try:
             h, w = current_img.shape[:2]
             crop_img = current_img[max(0, y1):min(h, y2), max(0, x1):min(w, x2)]
             if crop_img.size == 0:
-                print("⚠️ 传入的 ROI 区域大小为 0，跳过检测。")
+                log.info("⚠️ 传入的 ROI 区域大小为 0，跳过检测。")
                 return False
         else:
             crop_img = current_img
@@ -1664,29 +1645,29 @@ try:
         for name, path in blacklist_dict.items():
             # 防御性编程：确保文件路径存在
             if not os.path.exists(path):
-                print(f"⚠️ 警告：黑名单文件不存在，已跳过：{path}")
+                log.warning(f"⚠️ 警告：黑名单文件不存在，已跳过：{path}")
                 continue
 
             # 读取模板并转为灰度图
             template = cv2.imread(path, 0)
             if template is None:
-                print(f"⚠️ 错误：无法读取图片（可能格式损坏）：{path}")
+                log.error(f"⚠️ 错误：无法读取图片（可能格式损坏）：{path}")
                 continue
 
             # 检查模板图是否比裁剪后的目标图还要大，如果大则无法匹配
             if template.shape[0] > gray_crop.shape[0] or template.shape[1] > gray_crop.shape[1]:
-                # print(f"ℹ️ 模板 [{name}] 比指定检测区域还大，无法匹配，跳过。")
+                log.info(f"ℹ️ 模板 [{name}] 比指定检测区域还大，无法匹配，跳过。")
                 continue
 
             # 执行模板匹配
             res = cv2.matchTemplate(gray_crop, template, cv2.TM_CCOEFF_NORMED)
             _, max_val, _, _ = cv2.minMaxLoc(res)
 
-            print(f"🔍 正在比对黑名单标签 [{name}] ... 当前最高匹配度: {max_val:.4f}")
+            log.info(f"🔍 正在比对黑名单标签 [{name}] ... 当前最高匹配度: {max_val:.4f}")
 
             # 4. 只要有一个匹配成功，立刻返回 True
             if max_val >= threshold:
-                print(f"🚫 命中黑名单！成功检测到标签：[{name}]，匹配度({max_val:.4f}) >= 阈值({threshold})")
+                log.info(f"🚫 命中黑名单！成功检测到标签：[{name}]，匹配度({max_val:.4f}) >= 阈值({threshold})")
                 return True
 
         # 5. 循环结束，一个都没对上，返回 False
@@ -1714,12 +1695,12 @@ try:
         章节滑动次数 = 0  # 初始化计数器
         # 最大挑战/切换次数限制为 8 次
         for 尝试次数 in range(1, 9):
-            print(f"正在进行第 {尝试次数} 次章节标签黑名单检测...")
+            log.info(f"正在进行第 {尝试次数} 次章节标签黑名单检测...")
 
             章节标签黑名单结果 = 检查区域是否命中章节标签黑名单(blacklist_dict=章节标签黑名单)
 
             if 章节标签黑名单结果:
-                print(f"🚫 第 {尝试次数} 次检测：命中黑名单！正在执行切换动作...")
+                log.info(f"🚫 第 {尝试次数} 次检测：命中黑名单！正在执行切换动作...")
 
                 下一章ui = (x相对坐标(138), y相对坐标(963))
                 下一章ui = 坐标随机(下一章ui, left=x相对坐标(120), right=x相对坐标(120), up=y相对坐标(15), down=y相对坐标(15))
@@ -1728,11 +1709,11 @@ try:
                 # 适当增加一点等待动画的时间，防止连续点击过快导致游戏 UI 没刷新过来
                 time.sleep(1.0)
             else:
-                print("🎉 检测通过：当前章节标签不在黑名单中，退出拦截循环。")
+                log.info("🎉 检测通过：当前章节标签不在黑名单中，退出拦截循环。")
                 break
         else:
             # 💡 这是一个高级语法：当 for 循环完整跑满 8 次且没有触发 break 时，会走到这里
-            print("⚠️ 警告：已经连续切换了 8 次章节，依然处于黑名单中！脚本可能已迷路，建议触发兜底策略。")
+            log.warning("⚠️ 警告：已经连续切换了 8 次章节，依然处于黑名单中！脚本可能已迷路，建议触发兜底策略。")
             # 这里可以写你的兜底逻辑，比如 return 退出函数，或者报错截图
         while True:
             通关标志 = 图像是否存在从配置文件中获取文件路径('章节_通关标志')
@@ -1742,7 +1723,7 @@ try:
 
                 d.shell(f"input swipe {x相对坐标(1480)} {y相对坐标(720)} {x相对坐标(1080)} {y相对坐标(720)} 100")
                 章节滑动次数 += 1  # 计数加 1
-                print(f"检测到通关标志，已累计向左滑动 {章节滑动次数} 次")
+                log.info(f"检测到通关标志，已累计向左滑动 {章节滑动次数} 次")
                 time.sleep(1)
 
                 # 当滑动满 7 次时触发
@@ -1754,10 +1735,10 @@ try:
                     章节滑动次数 += 1  # 计数加 1
                     time.sleep(1)
                 else:
-                    print("未检测到通关标志且当前章节未在黑名单中，已定位到未通关章节。")
+                    log.info("未检测到通关标志且当前章节未在黑名单中，已定位到未通关章节。")
                     break
             if 章节滑动次数 == 7:
-                print("已满 7 次，执行点击动作...")
+                log.info("已满 7 次，执行点击动作...")
                 time.sleep(1.5)
                 # 执行点击（请替换为你的实际目标坐标）
                 下一章ui = (x相对坐标(138), y相对坐标(963))
@@ -1767,7 +1748,7 @@ try:
 
                 # 【核心修改】：重置计数器，不退出，让 while 循环继续重复执行
                 章节滑动次数 = 0
-                print("点击完成，重置计数，继续当前函数循环...")
+                log.info("点击完成，重置计数，继续当前函数循环...")
 
 
 
@@ -1775,7 +1756,7 @@ try:
     def 普攻():
         普攻坐标 = (x相对坐标(2388), y相对坐标(1261))
         clink_zuobiao = 坐标随机(普攻坐标, left=x相对坐标(80), right=x相对坐标(80), up=y相对坐标(70), down=y相对坐标(70))
-        print(f'实际点击坐标{clink_zuobiao}')
+        log.info(f'【普攻】实际点击坐标{clink_zuobiao}')
         adb_click(clink_zuobiao)
 
 
@@ -1820,7 +1801,7 @@ try:
             for name, bounds in BALL_COLORS.items():
                 mask = cv2.inRange(sample, bounds["lower"], bounds["upper"])
                 # 如果符合条件的像素超过 1500 个，视为发现目标
-                print(f'消球检测函数：像素点：{cv2.countNonZero(mask)}')
+                log.debug(f'消球检测函数：像素点：{cv2.countNonZero(mask)}')
                 if cv2.countNonZero(mask) > 1200:
                     return name
 
@@ -1888,7 +1869,7 @@ try:
         # 4. 统计白色像素数量
         # countNonZero 统计非零像素，即 mask 中白色部分的数量
         count = cv2.countNonZero(roi_mask)
-        print(count)
+        log.debug(f'闪避检测函数：像素点：{count}')
         if count > 1800:
             return 1
         return 0
@@ -1906,9 +1887,9 @@ try:
             else:
                 time.sleep(1)
         for i in range(1,4):#循环点击，直至作战失败消失
-            print(f'作战失败标识符检测：第{i}次')
+            log.info(f'作战失败标识符检测：第{i}次')
             if 图像是否存在从配置文件中获取文件路径('作战失败'):
-                print(f'检测到作战失败标识符，正在执行点击')
+                log.info(f'检测到作战失败标识符，正在执行点击')
                 区域内随机坐标点击(x相对坐标(607), x相对坐标(1955), y相对坐标(494), y相对坐标(1220))
                 time.sleep(0.8)
             else:
@@ -1929,13 +1910,13 @@ try:
                 log.info('副本已结束，退出副本内状态')
                 return
             if 战斗场景检测():
-                print('仍然处于副本内，继续战斗')
+                log.info('仍然处于副本内，继续战斗')
                 战斗主函数(副本开始时间)
 
             img = 缩放图片至基准尺寸(截图())
             img_yolo = 图像处理(img, "副本_战斗交互按钮")
             if yolo检测扩展版(model=地标检测模型, 检测标签="副本—战斗交互按钮", img_a=img_yolo):
-                print('检测到交互按钮，正在点击')
+                log.info('检测到交互按钮，正在点击')
                 区域内随机坐标点击(x相对坐标(2294), x相对坐标(2418), y相对坐标(966), y相对坐标(1086))
                 time.sleep(1.5)
             if hsv模板匹配('副本-战斗对话页', config.副本_战斗对话页hsv范围lower,
@@ -1943,21 +1924,21 @@ try:
                 区域内随机坐标点击(x相对坐标(1567), x相对坐标(1721), y相对坐标(1200), y相对坐标(1247))
                 time.sleep(0.1)
                 区域内随机坐标点击(x相对坐标(2206), x相对坐标(2312), y相对坐标(1071), y相对坐标(1183))
-                print('检测到战斗对话页，正在执行点击')
+                log.info('检测到战斗对话页，正在执行点击')
                 time.sleep(0.2)
             time.sleep(0.1)
 
     def 战斗主函数(副本计时=0):
         empty_count = 0
         上一次闪避时间=0
-        print('开始战斗计时')
+        log.info('开始战斗计时')
         while not 共享变量.超时信号:
             闪避计时=time.time()
-            print(f'当前已运行时间:{time.time() - 副本计时}')
+            log.info(f'当前已运行时间:{time.time() - 副本计时}')
             if time.time() - 副本计时 > 260:
                 共享变量.超时信号 = True
-                print('副本已超时，正在执行退出')
-                print('正在同步时间')
+                log.info('副本已超时，正在执行退出')
+                log.info('正在同步时间')
                 break
             with 共享变量.寻路和战斗锁:
                 img = 缩放图片至基准尺寸(截图())
@@ -1965,29 +1946,29 @@ try:
                     # 1. 优先级最高：闪避检测
                     n = 战斗标识检测(img)
 
-                    print(f'战斗标识物持续未出现次数{empty_count}')
+                    log.info(f'战斗标识物持续未出现次数{empty_count}')
                     if n is None:
                         empty_count += 1
                         if empty_count >= 12:
-                            print('退出战斗循环')
+                            log.info('退出战斗循环')
                             break
                     else:
-                        print('存在标志物')
+                        log.info('存在标志物')
                         empty_count = 0
 
                     if 闪避检测(img) == 1:
-                        print(f'差值为：{闪避计时-上一次闪避时间}')
+                        log.debug(f'差值为：{闪避计时-上一次闪避时间}')
                         if 闪避计时-上一次闪避时间>=5:
                             闪避()
-                            print('闪避冷却已过，执行闪避')
+                            log.info('闪避冷却已过，执行闪避')
                             上一次闪避时间=闪避计时
                         else:
-                            print('闪避冷却中')
+                            log.info('闪避冷却中')
                         continue  # 跳过本次循环剩余部分，重新检测
 
                     # 2. 优先级次之：必杀检测
                     if 必杀检测(img) == 1:
-                        print("触发必杀")
+                        log.info("触发必杀")
                         必杀()
                         time.sleep(1.0)  # 必杀动画时间
                         continue
@@ -1996,45 +1977,45 @@ try:
                     # 注意：这里需要根据你的消球逻辑处理返回值
                     球颜色 = 消球检测(img)
                     if 球颜色 is not None:
-                        print(f"触发消球: {球颜色}")
+                        log.info(f"触发消球: {球颜色}")
                         消球()
                         time.sleep(0.3)
                         continue
 
                     # 4. 最低优先级：普攻 (如果上面都没触发，则执行普攻)
                     普攻()
-                    print('普攻')
+                    log.info('执行普攻')
                     # 控制全局节奏，防止操作过快导致卡顿
                     time.sleep(0.1)
                     # end_time = time.perf_counter()
                     # elapsed_time = end_time - start_time
                     # print(f'循环一次耗时：【{elapsed_time}】')
                 except Exception as e:
-                    print(f"战斗发生异常: {e}")
+                    log.error(f"战斗发生异常: {e}")
                     time.sleep(1)
             time.sleep(0.05)
         log.debug('战斗循环结束，正在检测战斗交互按钮')
         img_yolo = 图像处理(img, "副本_战斗交互按钮")
         if yolo检测扩展版(model=地标检测模型, 检测标签="副本—战斗交互按钮", img_a=img_yolo):
-            print('检测到交互按钮，正在点击')
+            log.info('检测到交互按钮，正在点击')
             区域内随机坐标点击(x相对坐标(2294), x相对坐标(2418), y相对坐标(966), y相对坐标(1086))
             time.sleep(1.5)
             start_time=time.time()
             while time.time() - start_time < 3:
                 img_yolo = 图像处理(img, "副本_战斗交互按钮")
                 if yolo检测扩展版(model=地标检测模型, 检测标签="副本—战斗交互按钮", img_a=img_yolo):
-                    print('交互按钮仍然存在，继续点击')
+                    log.info('交互按钮仍然存在，继续点击')
                     区域内随机坐标点击(x相对坐标(2294), x相对坐标(2418), y相对坐标(966), y相对坐标(1086))
                     time.sleep(1)
                 else:
-                    print('交互按钮已消失，退出循环')
+                    log.info('交互按钮已消失，退出循环')
                     break
         if hsv模板匹配('副本-战斗对话页', config.副本_战斗对话页hsv范围lower,
                        config.副本_战斗对话页hsv范围upper):
             区域内随机坐标点击(x相对坐标(1567), x相对坐标(1721), y相对坐标(1200), y相对坐标(1247))
             time.sleep(0.1)
             区域内随机坐标点击(x相对坐标(2206), x相对坐标(2312), y相对坐标(1071), y相对坐标(1183))
-            print('检测到战斗对话页，正在执行点击')
+            log.info('检测到战斗对话页，正在执行点击')
             time.sleep(0.2)
             for i in range(2):
                 if hsv模板匹配('副本-战斗对话页', config.副本_战斗对话页hsv范围lower,
@@ -2047,14 +2028,14 @@ try:
                 else:
                     log.debug('战斗对话页按钮已消失，退出点击循环')
                     break
-        print('退出战斗循环，正在结束子线程')
+        log.info('退出战斗循环，正在结束子线程')
         共享变量.停止寻敌信号 = True
-        print("🎉 子线程已经彻底凉透，主线程可以安心继续推进了。")
+        log.info("🎉 子线程已经彻底凉透，主线程可以安心继续推进了。")
         if 共享变量.超时信号:
-            print('副本超时，正在执行退出并更新黑名单')
+            log.info('副本超时，正在执行退出并更新黑名单')
             战斗退出()
             黑名单更新(共享变量.章节名截图)
-        print('已退出战斗主函数')
+        log.info('已退出战斗主函数')
 
     def 黑名单更新(img):
         """
@@ -2083,9 +2064,9 @@ try:
             _, img_encode = cv2.imencode('.png', img)
             with open(全路径, 'wb') as f:
                 f.write(img_encode.tobytes())
-            print(f"💾 局部截图已保存 -> {全路径}")
+            log.info(f"💾 局部截图已保存 -> {全路径}")
         except Exception as e:
-            print(f"❌ 图片写入硬盘失败: {e}")
+            log.error(f"❌ 图片写入硬盘失败: {e}")
             return
 
         # 6. 🚀【核心修改：将新黑名单数据写入 config.json】实现长期记忆
@@ -2106,10 +2087,10 @@ try:
                 # indent=4 保证缩进美观，ensure_ascii=False 保证随机生成的中文章节名不乱码
                 json.dump(cfg, f, ensure_ascii=False, indent=4)
 
-            print(f"🔮 [长期记忆] 成功将黑名单数据 【{随机章节名}】 刻入 config.json！")
+            log.info(f"🔮 [长期记忆] 成功将黑名单数据 【{随机章节名}】 刻入 config.json！")
 
         except Exception as e:
-            print(f"❌ 写入 config.json 失败: {e}")
+            log.error(f"❌ 写入 config.json 失败: {e}")
     def 路径向导(relative_path):
         """
         自动补全目录深度，并统一路径格式
@@ -2166,16 +2147,16 @@ try:
             end_x = start_x + random.randint(-x相对坐标(10), x相对坐标(10))
             end_y = start_y + real_distance
         else:
-            print(f"❌ 错误：不支持的滑动方向 [{滑动方向}]")
+            log.warning(f"❌ 错误：不支持的滑动方向 [{滑动方向}]")
             return False
         try:
             d.shell(f'input swipe {start_x} {start_y} {end_x} {end_y} {持续时间}')
             return True
         except Exception as e:
-            print(f"⚠️ 滑动操作异常: {e}")
+            log.error(f"⚠️ 滑动操作异常: {e}")
             return False
 except Exception as e:
-    print("\n❌ 脚本崩溃！报错信息已自动记录至本地 [崩溃日志.txt]")
+    log.error("\n❌ 脚本崩溃！报错信息已自动记录至本地 [崩溃日志.txt]")
 
     # 自动把报错塞进本地文件，哪怕窗口关了，账本还在！
     with open("崩溃日志-函数资源py.txt", "a", encoding="utf-8") as f:
