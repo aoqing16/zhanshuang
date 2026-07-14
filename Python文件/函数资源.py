@@ -29,7 +29,7 @@ from datetime import datetime
 
 # 🌟 核心升级：构建二级文件夹路径 => ./logs/20260714_234046/
 # 将这个变量作为全局变量，供你后续的“异常捕获模块”直接调用！
-当前运行目录 = os.path.join("./logs", 启动时间)
+当前运行目录 = os.path.join(config.项目根目录路径,"logs", 启动时间)
 os.makedirs(当前运行目录, exist_ok=True)
 
 # 具体的运行日志物理路径 => ./logs/20260714_234046/run.log
@@ -48,7 +48,11 @@ file_handler.setLevel(logging.DEBUG)
 
 # 创建控制台大喇叭（白变白）
 console_handler = logging.StreamHandler(sys.stdout)
-console_handler.setLevel(logging.INFO)  # 控制台 INFO 保持清爽
+if hasattr(sys, '_MEIPASS'):
+    console_handler.setLevel(logging.INFO)
+    pass
+else:
+    console_handler.setLevel(logging.DEBUG)
 
 # 绑定排版格式
 formatter = logging.Formatter(fmt=日志格式, datefmt=时间格式)
@@ -422,7 +426,7 @@ try:
         log.debug(f"{key} 匹配度: {max_val:.4f}") # 调试用
         return max_val >= threshold
 
-    def 图像随机位置点击配置文件(key, threshold=0.7, padding=0):
+    def 图像随机位置点击(key, threshold=0.7, padding=0):
         """
         匹配模板并在匹配区域内返回一个随机坐标
         :param img_name: 模板图片相对路径ziyuanwenjian/biaoshi/img_24.png
@@ -444,7 +448,7 @@ try:
         h, w = template.shape[:2]
         res = cv2.matchTemplate(缩放后图片, template, cv2.TM_CCOEFF_NORMED)
         _, max_val, _, max_loc = cv2.minMaxLoc(res)
-        log.debug(f'图像随机位置点击配置文件函数模板匹配置信度：{max_val}')
+        log.debug(f'【图像随机位置点击】模板key【{key}】置信度：{max_val}')
         if max_val >= threshold:
             # 获取匹配区域的左上角 (x, y)
             x1, y1 = max_loc
@@ -1901,9 +1905,9 @@ try:
     def 战斗退出():
         区域内随机坐标点击(x相对坐标(2390),x相对坐标(2490),y相对坐标(55),y相对坐标(141))
         time.sleep(1)
-        图像随机位置点击配置文件('撤退')
+        图像随机位置点击('撤退')
         time.sleep(0.8)
-        图像随机位置点击配置文件('撤退_确定')
+        图像随机位置点击('撤退_确定')
         time.sleep(3)
         for _ in range(3):#等待作战失败文字出现
             if 图像是否存在从配置文件中获取文件路径('作战失败'):
@@ -2192,4 +2196,4 @@ except Exception as e:
     traceback.print_exc()
     input("\n👉 按回车键退出程序...")
 if __name__ == '__main__':
-    异常捕获截图()
+    黑名单更新()

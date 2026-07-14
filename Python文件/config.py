@@ -58,6 +58,8 @@ yolo模型路径={"分类模型": os.path.join(项目根目录路径, "model", '
     "新版界面UI":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_12.png'),
     "主页_任务":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_14.png'),
     "主页_主线":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_17.png'),
+    "副本_剧情副本弹窗_开始播放":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_29.png'),
+    "副本_战斗副本弹窗_开始作战":os.path.join(项目根目录路径, "ziyuanwenjian", 'biaoshi','img_33.png'),
 
 }
 
