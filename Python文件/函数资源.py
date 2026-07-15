@@ -1505,7 +1505,7 @@ try:
             # 🌟 核心改动 1：使用列表推导式，直接过滤掉所有右边界在 140 以内的目标
             final_valid_candidates = [
                 cand for cand in uncompleted_candidates
-                if x相对坐标(140) < cand['x2'] <= x相对坐标(2420)
+                if 140 < cand['x2'] <= 2420
             ]
 
             if not final_valid_candidates:
