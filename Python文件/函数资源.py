@@ -1,7 +1,4 @@
-import math
-import shutil
 import subprocess
-import time
 import json
 import traceback
 from ultralytics import YOLO
@@ -13,26 +10,58 @@ import config
 import cv2
 import numpy as np
 import logging
+import shutil
 from datetime import datetime
 ###定义全局变量，并进行初始化赋值
 灵敏度=None
+
+
 # 1. 定义日志的输出格式
 日志格式 = '%(asctime)s [%(levelname)s] (%(filename)s:%(lineno)d) -> %(message)s'
 时间格式 = '%H:%M:%S'
 
 # =============================================================
-# 📁 动态 Session 文件夹构建（核心目录结构）
+# 📁 动态 Session 文件夹构建与自动物理清洗（最大限制 6 个）
 # =============================================================
 
-# 获取脚本启动时的物理时间（精确到秒，如 20260714_234046）
-启动时间 = datetime.now().strftime('%Y%m%d_%H%M%S')
+# 设定物理上限值
+最大日志文件夹数量 = 6
 
-# 🌟 核心升级：构建二级文件夹路径 => ./logs/20260714_234046/
-# 将这个变量作为全局变量，供你后续的“异常捕获模块”直接调用！
-当前运行目录 = os.path.join(config.项目根目录路径,"logs", 启动时间)
+# 根日志目录
+根日志目录 = os.path.join(config.项目根目录路径, "logs")
+os.makedirs(根日志目录, exist_ok=True)
+
+# 🌟 核心升级：在创建新文件夹前，先执行物理空间回收判定
+try:
+    # 1. 捞出 logs 文件夹下所有的实体子元素，并且只保留“文件夹”
+    所有子目录 = [
+        os.path.join(根日志目录, d)
+        for d in os.listdir(根日志目录)
+        if os.path.isdir(os.path.join(根日志目录, d))
+    ]
+
+    # 2. 如果现存的会话文件夹数量已经达到或超过了限制（阈值为6）
+    if len(所有子目录) >= 最大日志文件夹数量:
+        # 按文件夹的最后修改时间（mtime）从小到大排序（最老的那位会排在第 0 位）
+        所有子目录.sort(key=lambda x: os.path.getmtime(x))
+
+        # 毁灭性物理清洗：精准消灭最久远的那个文件夹（连同里面的 run.log 和截图快照一起蒸发）
+        最老文件夹 = 所有子目录[0]
+        shutil.rmtree(最老文件夹)
+
+        # 此时对讲机还没初始化好，先用默认的 print 打印一条硬核留档
+        print(f"[⚙️ 磁盘自洁机制] 检测到日志会话数触发上限，已物理粉碎最久远的历史账本: {最老文件夹}")
+
+except Exception as e:
+    # 容错降级：万一清洗过程中有文件被物理锁死报错，不影响主脚本拉起
+    print(f"[⚠️ 磁盘自洁失败] 无法完成历史日志清洗: {e}")
+
+# 3. 正常建立本次运行的独立文件夹
+启动时间 = datetime.now().strftime('%Y%m%d_%H%M%S')
+当前运行目录 = os.path.join(根日志目录, 启动时间)
 os.makedirs(当前运行目录, exist_ok=True)
 
-# 具体的运行日志物理路径 => ./logs/20260714_234046/run.log
+# 具体的运行日志物理路径
 日志文件路径 = os.path.join(当前运行目录, "run.log")
 
 # =============================================================
@@ -50,7 +79,6 @@ file_handler.setLevel(logging.DEBUG)
 console_handler = logging.StreamHandler(sys.stdout)
 if hasattr(sys, '_MEIPASS'):
     console_handler.setLevel(logging.INFO)
-    pass
 else:
     console_handler.setLevel(logging.DEBUG)
 
